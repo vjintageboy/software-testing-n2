@@ -1,26 +1,33 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Livewire\Admin\Faculties\ManageFaculties;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Nhóm route có bảo vệ đăng nhập + xác thực
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-
-    // Dashboard sau khi đăng nhập
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // Quản lý khoa (faculties) - Livewire component
-    Route::get('/admin/faculties', function () {
-    return view('admin.faculties.index'); // Trỏ đến một file view mới
-})->name('admin.faculties');
-
+    // Corrected route to point to the ManageFaculties class
+    Route::get('/admin/faculties', ManageFaculties::class)->name('admin.faculties');
 });
+
