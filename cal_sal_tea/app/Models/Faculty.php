@@ -1,4 +1,5 @@
 <?php
+// app/Models/Faculty.php
 
 namespace App\Models;
 

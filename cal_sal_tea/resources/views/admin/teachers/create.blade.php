@@ -1,0 +1,72 @@
+@extends('adminlte::page')
+
+@section('title', 'Thêm Giáo viên mới')
+
+@section('content_header')
+    <h1 class="m-0 text-dark">Thêm Giáo viên mới</h1>
+@stop
+
+@section('content')
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form action="{{ route('teachers.store') }}" method="POST">
+                        @csrf
+                        <div class="form-group">
+                            <label for="teacher_code">Mã giáo viên</label>
+                            <input type="text" name="teacher_code" class="form-control" id="teacher_code" value="{{ old('teacher_code') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="full_name">Họ và tên</label>
+                            <input type="text" name="full_name" class="form-control" id="full_name" value="{{ old('full_name') }}" required>
+                        </div>
+                         <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" name="email" class="form-control" id="email" value="{{ old('email') }}">
+                        </div>
+                         <div class="form-group">
+                            <label for="phone">Số điện thoại</label>
+                            <input type="text" name="phone" class="form-control" id="phone" value="{{ old('phone') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_of_birth">Ngày sinh</label>
+                            <input type="date" name="date_of_birth" class="form-control" id="date_of_birth" value="{{ old('date_of_birth') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="faculty_id">Khoa</label>
+                            <select name="faculty_id" id="faculty_id" class="form-control" required>
+                                <option value="">-- Chọn Khoa --</option>
+                                @foreach($faculties as $faculty)
+                                    <option value="{{ $faculty->id }}" {{ old('faculty_id') == $faculty->id ? 'selected' : '' }}>{{ $faculty->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="degree_id">Bằng cấp</label>
+                            <select name="degree_id" id="degree_id" class="form-control" required>
+                                <option value="">-- Chọn Bằng cấp --</option>
+                                @foreach($degrees as $degree)
+                                    <option value="{{ $degree->id }}" {{ old('degree_id') == $degree->id ? 'selected' : '' }}>{{ $degree->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <a href="{{ route('teachers.index') }}" class="btn btn-secondary">Hủy</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@stop

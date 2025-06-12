@@ -1,14 +1,80 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Quản lý Khoa') }}
-        </h2>
-    </x-slot>
+    @extends('adminlte::page')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            {{-- Dòng này sẽ gọi và hiển thị Livewire component của bạn --}}
-            @livewire('admin.faculties.manage-faculties')
+    @section('title', 'Quản lý Khoa')
+
+    @section('content_header')
+        <h1 class="m-0 text-dark">Quản lý Khoa</h1>
+    @stop
+
+    @section('content')
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        {{-- Hiển thị thông báo --}}
+                        @if(session('success'))
+                            <div class="alert alert-success alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                                <h5><i class="icon fas fa-check"></i> Thành công!</h5>
+                                {{ session('success') }}
+                            </div>
+                        @endif
+                         @if(session('error'))
+                            <div class="alert alert-danger alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                                <h5><i class="icon fas fa-ban"></i> Lỗi!</h5>
+                                {{ session('error') }}
+                            </div>
+                        @endif
+                        
+                        {{-- Nút tạo mới --}}
+                        <a href="{{ route('faculties.create') }}" class="btn btn-primary mb-2">
+                            <i class="fa fa-plus"></i> Tạo Khoa mới
+                        </a>
+
+                        {{-- Bảng dữ liệu --}}
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">ID</th>
+                                    <th>Tên Khoa</th>
+                                    <th>Viết tắt</th>
+                                    <th>Mô tả</th>
+                                    <th style="width: 150px;">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($faculties as $faculty)
+                                    <tr>
+                                        <td>{{ $faculty->id }}</td>
+                                        <td>{{ $faculty->name }}</td>
+                                        <td>{{ $faculty->abbreviation }}</td>
+                                        <td>{{ $faculty->description }}</td>
+                                        <td>
+                                            <a href="{{ route('faculties.edit', $faculty) }}" class="btn btn-sm btn-info">Sửa</a>
+                                            <form action="{{ route('faculties.destroy', $faculty) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">Xóa</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center">Không có dữ liệu.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+
+                        {{-- Phân trang --}}
+                        <div class="mt-3 d-flex justify-content-end">
+                            {{ $faculties->links() }}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</x-app-layout>
+    @stop
+    
