@@ -66,5 +66,7 @@ Route::middleware(['auth'])->group(function () {
         // --- Chức năng đặc biệt cho Lớp học phần ---
         Route::get('classes/bulk/create', [CourseClassController::class, 'createBulk'])->name('classes.create_bulk');
         Route::post('classes/bulk', [CourseClassController::class, 'storeBulk'])->name('classes.store_bulk');
+        Route::delete('/assignments/destroy-bulk', [AssignmentController::class, 'destroyBulk'])->name('assignments.destroyBulk');
+
     });
 });

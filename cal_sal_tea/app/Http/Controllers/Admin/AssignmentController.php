@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\CourseClass;
 use App\Models\Teacher;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class AssignmentController extends Controller
@@ -106,10 +107,12 @@ class AssignmentController extends Controller
     {
         $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
+            'notes' => 'nullable|string', // Thêm validation cho notes
         ]);
 
         $assignment->update([
             'teacher_id' => $request->teacher_id,
+            'notes' => $request->notes, // Thêm notes vào mảng cập nhật
         ]);
         
         // Sửa lại để bỏ tiền tố 'admin.'
@@ -125,5 +128,31 @@ class AssignmentController extends Controller
 
         // Sửa lại để bỏ tiền tố 'admin.'
         return redirect()->route('assignments.index')->with('success', 'Đã xóa phân công thành công.');
+    }
+
+    /**
+     * Xóa nhiều phân công đã chọn.
+     */
+    public function destroyBulk(Request $request)
+    {
+        $request->validate([
+            'assignment_ids' => 'required|array|min:1',
+            'assignment_ids.*' => 'exists:assignments,id',
+            'confirmation_text' => 'required|in:XÁC NHẬN',
+        ], [
+            'assignment_ids.required' => 'Vui lòng chọn ít nhất một phân công để xóa.',
+            'assignment_ids.*.exists' => 'Một trong các phân công được chọn không hợp lệ.',
+            'confirmation_text.required' => 'Vui lòng nhập "XÁC NHẬN" để xóa.',
+            'confirmation_text.in' => 'Chuỗi xác nhận không đúng. Vui lòng nhập "XÁC NHẬN".',
+        ]);
+
+        $assignmentIds = $request->assignment_ids;
+
+        DB::transaction(function () use ($assignmentIds) {
+            Assignment::whereIn('id', $assignmentIds)->delete();
+        });
+
+        return redirect()->route('assignments.index')
+                         ->with('success', 'Đã xóa thành công ' . count($assignmentIds) . ' phân công.');
     }
 }

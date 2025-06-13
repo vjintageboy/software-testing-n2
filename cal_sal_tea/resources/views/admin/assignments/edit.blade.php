@@ -25,15 +25,12 @@
                         @csrf
                         @method('PUT')
                         <div class="form-group">
-                            <label for="course_class_id">Lớp học phần</label>
-                            <select name="course_class_id" id="course_class_id" class="form-control" required>
-                                <option value="">-- Chọn Lớp học phần --</option>
-                                @foreach($unassignedClasses as $class)
-                                    <option value="{{ $class->id }}" {{ old('course_class_id', $assignment->course_class_id) == $class->id ? 'selected' : '' }}>
-                                        [{{ $class->class_code }}] {{ $class->course->name }} - ({{ $class->term->name }} {{ $class->term->academic_year }})
-                                    </option>
-                                @endforeach
-                            </select>
+                            <label>Lớp học phần</label>
+                            <input type="text" class="form-control" 
+                                   value="[{{ $assignment->courseClass->class_code ?? 'N/A' }}] {{ $assignment->courseClass->course->name ?? 'N/A' }} - ({{ $assignment->courseClass->term->name ?? 'N/A' }} {{ $assignment->courseClass->term->academic_year ?? 'N/A' }})" 
+                                   readonly>
+                            {{-- Giữ lại ID lớp học phần nếu cần cho logic khác, nhưng không cho phép sửa trực tiếp ở đây --}}
+                            <input type="hidden" name="course_class_id" value="{{ $assignment->course_class_id }}">
                         </div>
                         
                         <div class="form-group">

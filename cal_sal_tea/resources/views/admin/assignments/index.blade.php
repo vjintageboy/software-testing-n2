@@ -1,70 +1,170 @@
 @extends('adminlte::page')
 
-@section('title', 'Phân công Giảng dạy')
+@section('title', 'Quản lý Phân công Giảng dạy')
 
 @section('content_header')
-    <h1 class="m-0 text-dark">Phân công Giảng dạy</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="m-0 text-dark">Quản lý Phân công Giảng dạy</h1>
+        <a href="{{ route('assignments.create') }}" class="btn btn-success">
+            <i class="fas fa-plus mr-1"></i> Thêm Phân công mới
+        </a>
+    </div>
 @stop
 
 @section('content')
+{{-- Lưu ý: Route 'assignments.destroyBulk' cần được định nghĩa trong tệp web.php --}}
+<form id="bulk-delete-form" action="{{ route('assignments.destroyBulk') }}" method="POST">
+    @csrf
+    @method('DELETE')
+
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
+                    {{-- Thông báo --}}
                     @if(session('success'))
-                        <div class="alert alert-success alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                            <h5><i class="icon fas fa-check"></i> Thành công!</h5>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
                     @endif
-                    
-                    <a href="{{ route('assignments.create') }}" class="btn btn-primary mb-2">
-                        <i class="fa fa-plus"></i> Tạo phân công mới
-                    </a>
 
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>Mã Lớp HP</th>
-                                <th>Tên Học phần</th>
-                                <th>Giáo viên phụ trách</th>
-                                <th>Khoa</th>
-                                <th>Kì học</th>
-                                <th style="width: 150px;">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($assignments as $assignment)
-                                <tr>
-                                    <td>{{ $assignment->courseClass->class_code ?? 'N/A' }}</td>
-                                    <td>{{ $assignment->courseClass->course->name ?? 'N/A' }}</td>
-                                    <td>{{ $assignment->teacher->full_name ?? 'N/A' }}</td>
-                                    <td>{{ $assignment->teacher->faculty->abbreviation ?? 'N/A' }}</td>
-                                    <td>{{ $assignment->courseClass->term->name ?? 'N/A' }} ({{$assignment->courseClass->term->academic_year ?? 'N/A'}})</td>
-                                    <td>
-                                        <a href="{{ route('assignments.edit', $assignment) }}" class="btn btn-sm btn-info">Sửa</a>
-                                        <form action="{{ route('assignments.destroy', $assignment) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn hủy phân công này?')">Hủy</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">Chưa có phân công nào.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-
-                    <div class="mt-3 d-flex justify-content-end">
-                        {{ $assignments->links() }}
+                    <div class="mb-3">
+                        <button type="button" id="bulk-delete-button" class="btn btn-danger" disabled>
+                            <i class="fas fa-trash-alt mr-1"></i> Xóa mục đã chọn
+                        </button>
                     </div>
 
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width: 50px;">
+                                        <input type="checkbox" id="select-all-assignments">
+                                    </th>
+                                    <th style="width: 50px;">ID</th>
+                                    <th>Giảng viên</th>
+                                    <th>Lớp học phần</th>
+                                    <th style="width: 80px;">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($assignments as $assignment)
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="assignment_ids[]" class="assignment-checkbox" value="{{ $assignment->id }}">
+                                        </td>
+                                        <td>{{ $assignment->id }}</td>
+                                        <td>{{ $assignment->teacher->full_name ?? 'N/A' }}</td>
+                                        <td>
+                                            {{ $assignment->courseClass->course->name ?? 'N/A' }} 
+                                            ({{ $assignment->courseClass->class_code ?? 'N/A' }})
+                                        </td>
+                                        <td>
+                                            {{-- THÊM NÚT SỬA --}}
+                                            <a href="{{ route('assignments.edit', $assignment) }}" class="btn btn-xs btn-warning" title="Sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            {{-- NÚT XÓA --}}
+                                            <form action="{{ route('assignments.destroy', $assignment) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phân công này không?');" style="display:inline-block;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-xs btn-danger" title="Xóa">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">Không có dữ liệu phân công.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {{-- Thêm phần phân trang --}}
+                <div class="card-footer d-flex justify-content-end">
+                    {{ $assignments->links() }}
                 </div>
             </div>
         </div>
     </div>
+</form>
+
+{{-- Modal xác nhận xóa hàng loạt --}}
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" role="dialog" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận Xóa Phân công</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa <strong id="selected-assignments-count">0</strong> phân công đã chọn?</p>
+                <p class="text-danger">Hành động này không thể hoàn tác.</p>
+                <div class="form-group">
+                    <label for="confirmation-text-input">Để xác nhận, vui lòng nhập <strong>"XÁC NHẬN"</strong>:</label>
+                    <input type="text" class="form-control" id="confirmation-text-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirm-bulk-delete-button" disabled>Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+@stop
+
+@section('js')
+<script>
+    $(document).ready(function() {
+        // Chọn tất cả
+        $('#select-all-assignments').on('click', function() {
+            $('.assignment-checkbox').prop('checked', $(this).prop('checked'));
+            toggleBulkDeleteButton();
+        });
+
+        // Checkbox thay đổi
+        $('.assignment-checkbox').on('change', function() {
+            if ($('.assignment-checkbox:checked').length === $('.assignment-checkbox').length) {
+                $('#select-all-assignments').prop('checked', true);
+            } else {
+                $('#select-all-assignments').prop('checked', false);
+            }
+            toggleBulkDeleteButton();
+        });
+
+        function toggleBulkDeleteButton() {
+            const count = $('.assignment-checkbox:checked').length;
+            $('#bulk-delete-button').prop('disabled', count === 0);
+        }
+
+        // Mở modal xác nhận
+        $('#bulk-delete-button').on('click', function(e) {
+            e.preventDefault();
+            const count = $('.assignment-checkbox:checked').length;
+            $('#selected-assignments-count').text(count);
+            $('#bulkDeleteModal').modal('show');
+        });
+
+        // Kích hoạt nút xác nhận trong modal
+        $('#confirmation-text-input').on('input', function() {
+            $('#confirm-bulk-delete-button').prop('disabled', $(this).val() !== 'XÁC NHẬN');
+        });
+
+        // Gửi form chính khi xác nhận
+        $('#confirm-bulk-delete-button').on('click', function() {
+            // Không cần thêm input ẩn, form đã có đủ thông tin
+            $('#bulk-delete-form').submit();
+        });
+    });
+</script>
 @stop
