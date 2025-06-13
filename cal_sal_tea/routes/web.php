@@ -56,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('terms', TermController::class);
         Route::resource('courses', CourseController::class);
         Route::resource('classes', CourseClassController::class);
-        Route::resource('assignments', AssignmentController::class);
+        
         
         // --- Quản lý tính lương ---
         Route::resource('payroll-parameters', PayrollParameterController::class);
@@ -66,7 +66,8 @@ Route::middleware(['auth'])->group(function () {
         // --- Chức năng đặc biệt cho Lớp học phần ---
         Route::get('classes/bulk/create', [CourseClassController::class, 'createBulk'])->name('classes.create_bulk');
         Route::post('classes/bulk', [CourseClassController::class, 'storeBulk'])->name('classes.store_bulk');
-        Route::delete('/assignments/destroy-bulk', [AssignmentController::class, 'destroyBulk'])->name('assignments.destroyBulk');
-
+        // THÊM ROUTE MỚI CHO VIỆC XÓA HÀNG LOẠT
+        Route::delete('assignments/bulk-destroy', [AssignmentController::class, 'destroyBulk'])->name('assignments.destroyBulk');
+        Route::resource('assignments', AssignmentController::class);
     });
 });
