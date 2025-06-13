@@ -7,6 +7,10 @@ use App\Models\CourseClass;
 use App\Models\Course;
 use App\Models\Term;
 use Illuminate\Http\Request;
+use App\Models\ClassSizeCoefficient;
+use App\Models\Teacher; // <-- Thêm model Teacher
+use App\Models\Assignment; // <-- Thêm model Assignment
+
 
 class CourseClassController extends Controller
 {
@@ -17,6 +21,8 @@ class CourseClassController extends Controller
     {
         $classes = CourseClass::with(['course', 'term'])->latest()->paginate(10);
         return view('admin.course_classes.index', compact('classes'));
+
+        
     }
 
     /**
@@ -50,12 +56,12 @@ class CourseClassController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CourseClass $courseClass)
+    public function edit(CourseClass $class)
     {
         $courses = Course::orderBy('name')->get();
         $terms = Term::latest()->get();
         return view('admin.course_classes.edit', [
-            'class' => $courseClass,
+            'class' => $class,
             'courses' => $courses,
             'terms' => $terms
         ]);
@@ -64,16 +70,16 @@ class CourseClassController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, CourseClass $courseClass)
+    public function update(Request $request, CourseClass $class)
     {
         $request->validate([
-            'class_code' => 'required|string|max:50|unique:course_classes,class_code,' . $courseClass->id,
+            'class_code' => 'required|string|max:50|unique:course_classes,class_code,' . $class->id,
             'course_id' => 'required|exists:courses,id',
             'term_id' => 'required|exists:terms,id',
             'number_of_students' => 'required|integer|min:0',
         ]);
 
-        $courseClass->update($request->all());
+        $class->update($request->all());
 
         return redirect()->route('classes.index')
                          ->with('success', 'Cập nhật lớp học phần thành công.');
@@ -97,5 +103,49 @@ class CourseClassController extends Controller
             return redirect()->route('classes.index')
                              ->with('error', 'Không thể xóa lớp học phần này. Vui lòng thử lại.');
         }
+    }
+    /**
+     * Hiển thị form để tạo nhanh nhiều lớp học phần.
+     */
+    public function createBulk()
+    {
+        $courses = Course::all();
+        $terms = Term::all();
+        return view('admin.course_classes.create_bulk', compact('courses', 'terms'));
+    }
+
+    /**
+     * Lưu trữ nhiều lớp học phần được tạo từ form.
+     */
+    public function storeBulk(Request $request)
+    {
+        // Xác thực dữ liệu đầu vào
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'term_id' => 'required|exists:terms,id',
+            'number_of_students' => 'required|integer|min:0',
+            'number_of_classes' => 'required|integer|min:1|max:100', // Giới hạn tạo tối đa 100 lớp 1 lần
+        ]);
+
+        $course = Course::findOrFail($request->course_id);
+        $term = Term::findOrFail($request->term_id);
+        $numberOfClasses = $request->number_of_classes;
+
+        // Bắt đầu vòng lặp để tạo các lớp
+        for ($i = 1; $i <= $numberOfClasses; $i++) {
+            // Đệm số 0 vào trước các số từ 1-9 (VD: 01, 02)
+            $classIndex = str_pad($i, 2, '0', STR_PAD_LEFT);
+
+            CourseClass::create([
+                'course_id' => $course->id,
+                'term_id' => $term->id,
+                // Tạo mã lớp theo quy tắc: MÃ_HP-MÃ_HK-SỐ_THỨ_TỰ
+                'class_code' => "{$course->course_code}-{$term->term_code}-{$classIndex}",
+                'number_of_students' => $request->number_of_students,
+            ]);
+        }
+
+        return redirect()->route('classes.index')
+                         ->with('success', "Đã tạo thành công {$numberOfClasses} lớp học phần cho môn {$course->name}.");
     }
 }

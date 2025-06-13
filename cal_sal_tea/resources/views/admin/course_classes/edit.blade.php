@@ -21,7 +21,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('classes.update', $class) }}" method="POST">
+                    <form action="{{ route('classes.update', ['class' => $class]) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="form-group">

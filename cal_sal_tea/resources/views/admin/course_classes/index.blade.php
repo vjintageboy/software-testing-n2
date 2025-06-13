@@ -7,69 +7,87 @@
 @stop
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                            <h5><i class="icon fas fa-check"></i> Thành công!</h5>
-                            {{ session('success') }}
-                        </div>
-                    @endif
-                     @if(session('error'))
-                        <div class="alert alert-danger alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                            <h5><i class="icon fas fa-ban"></i> Lỗi!</h5>
-                            {{ session('error') }}
-                        </div>
-                    @endif
-                    
-                    <a href="{{ route('classes.create') }}" class="btn btn-primary mb-2">
-                        <i class="fa fa-plus"></i> Mở Lớp học phần mới
+<div class="row">
+    <div class="col-12">
+        {{-- THÔNG BÁO THÀNH CÔNG / LỖI --}}
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> {{ session('error') }}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        @endif
+
+        {{-- KHUNG BẢNG DANH SÁCH --}}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Danh sách Lớp học phần</h3>
+                <div class="btn-group">
+                    <a href="{{ route('classes.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Thêm Lớp mới
                     </a>
-
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>Mã Lớp HP</th>
-                                <th>Tên Học phần</th>
-                                <th>Kì học</th>
-                                <th>Sĩ số</th>
-                                <th style="width: 150px;">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($classes as $class)
-                                <tr>
-                                    <td>{{ $class->class_code }}</td>
-                                    <td>{{ $class->course->name ?? 'N/A' }}</td>
-                                    <td>{{ $class->term->name ?? 'N/A' }} ({{$class->term->academic_year ?? 'N/A'}})</td>
-                                    <td>{{ $class->number_of_students }}</td>
-                                    <td>
-                                        <a href="{{ route('classes.edit', $class) }}" class="btn btn-sm btn-info">Sửa</a>
-                                        <form action="{{ route('classes.destroy', $class) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">Xóa</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center">Không có dữ liệu.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-
-                    <div class="mt-3 d-flex justify-content-end">
-                        {{ $classes->links() }}
-                    </div>
-
+                    <a href="{{ route('classes.create_bulk') }}" class="btn btn-info">
+                        <i class="fas fa-layer-group"></i> Tạo nhanh nhiều lớp
+                    </a>
                 </div>
+            </div>
+
+            <div class="card-body table-responsive p-0">
+                <table class="table table-bordered table-hover text-nowrap">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th>Mã Lớp</th>
+                            <th>Học phần</th>
+                            <th>Học kỳ</th>
+                            <th>Giảng viên</th>
+                            <th>Sĩ số</th>
+                            <th>Hệ số sĩ số</th>
+                            <th style="width: 150px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($classes as $courseClass)
+                            <tr>
+                                <td>{{ $courseClass->id }}</td>
+                                <td>{{ $courseClass->class_code }}</td>
+                                <td>{{ $courseClass->course->name ?? '-' }}</td>
+                                <td>{{ $courseClass->term->name ?? '-' }}</td>
+                                <td>{{ $courseClass->teacher_name ?? '-' }}</td>
+                                <td>{{ $courseClass->number_of_students }}</td>
+                                <td>{{ $courseClass->css_coefficient }}</td>
+                                <td>
+                                    <a href="{{ route('classes.edit', $courseClass->id) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </a>
+                                    <form action="{{ route('classes.destroy', $courseClass->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp học phần này?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Xóa
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">Chưa có lớp học phần nào.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- PHÂN TRANG --}}
+            <div class="card-footer d-flex justify-content-end">
+                {{ $classes->links() }}
             </div>
         </div>
     </div>
+</div>
 @stop

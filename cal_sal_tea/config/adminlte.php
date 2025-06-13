@@ -312,60 +312,72 @@ return [
     ],
 
     // Sidebar items
+['type' => 'sidebar-menu-search', 'text' => 'Tìm kiếm menu'],
 
-        [
-        'type' => 'sidebar-menu-search',
-        'text' => 'Tìm kiếm menu',
-    ],
+    // === PHÂN CÁCH: Danh mục cơ bản ===
+    ['header' => 'DANH MỤC CƠ BẢN'],
+
     [
         'text' => 'Quản lý Khoa',
         'route' => 'faculties.index',
-        'icon' => 'fas fa-fw fa-university',
+        'icon'  => 'fas fa-fw fa-university',
     ],
     [
-        'text' => 'Quản lý Bằng cấp',   
-        'route'  => 'degrees.index',  
-        'icon' => 'fas fa-fw fa-graduation-cap',
+        'text' => 'Quản lý Bằng cấp',
+        'route' => 'degrees.index',
+        'icon'  => 'fas fa-fw fa-graduation-cap',
     ],
     [
-        'text' => 'Quản lý Kì học',   
-        'route'  => 'terms.index',   
-        'icon' => 'fas fa-fw fa-calendar-alt',
+        'text' => 'Quản lý Kì học',
+        'route' => 'terms.index',
+        'icon'  => 'fas fa-fw fa-calendar-alt',
+    ],
+
+    // === PHÂN CÁCH: Đào tạo & học phần ===
+    ['header' => 'ĐÀO TẠO & HỌC PHẦN'],
+
+    [
+        'text' => 'Quản lý Học phần',
+        'route' => 'courses.index',
+        'icon'  => 'fas fa-fw fa-book',
     ],
     [
-        'text' => 'Quản lý Học phần',   
-        'route'  => 'courses.index',    
-        'icon' => 'fas fa-fw fa-book',
+        'text' => 'Quản lý Lớp học phần',
+        'route' => 'classes.index',
+        'icon'  => 'fas fa-fw fa-users',
+    ],
+
+    // === PHÂN CÁCH: Nhân sự & phân công ===
+    ['header' => 'GIẢNG VIÊN & PHÂN CÔNG'],
+
+    [
+        'text' => 'Quản lý Giáo viên',
+        'route' => 'teachers.index',
+        'icon'  => 'fas fa-fw fa-chalkboard-teacher',
     ],
     [
-        'text' => 'Quản lý Giáo viên',   
-        'route'  => 'teachers.index',     
-        'icon' => 'fas fa-fw fa-chalkboard-teacher',
+        'text' => 'Phân công Giảng dạy',
+        'route' => 'assignments.index',
+        'icon'  => 'fas fa-fw fa-calendar-check',
+    ],
+
+    // === PHÂN CÁCH: Tính lương ===
+    ['header' => 'TÍNH LƯƠNG & HỆ SỐ'],
+
+    [
+        'text' => 'Đơn giá Tiết dạy',
+        'route' => 'payroll-parameters.index',
+        'icon'  => 'fas fa-fw fa-dollar-sign',
     ],
     [
-        'text' => 'Quản lý Lớp học phần', 
-        'route'  => 'classes.index',      
-        'icon' => 'fas fa-fw fa-users',
+        'text' => 'Hệ số theo Sĩ số',
+        'route' => 'class-size-coefficients.index',
+        'icon'  => 'fas fa-fw fa-users-cog',
     ],
     [
-        'text' => 'Phân công Giảng dạy',   
-        'route'  => 'assignments.index',   
-        'icon' => 'fas fa-fw fa-calendar-check',
-    ],
-    [
-        'text' => 'Đơn giá Tiết dạy',     
-        'route'  => 'payroll-parameters.index',
-        'icon' => 'fas fa-fw fa-dollar-sign',
-    ],
-    [
-        'text' => 'Hệ số theo Sĩ số',    
-        'route'  => 'class-size-coefficients.index',
-        'icon' => 'fas fa-fw fa-users-cog',
-    ],
-    [
-        'text' => 'Bảng lương',     
-        'route'  => 'payrolls.index',
-        'icon' => 'fas fa-fw fa-file-invoice-dollar',
+        'text' => 'Bảng lương',
+        'route' => 'payrolls.index',
+        'icon'  => 'fas fa-fw fa-file-invoice-dollar',
     ],
 
 
