@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Import các Controllers cho từng module
+// Import các Controllers
 use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Admin\DegreeController;
 use App\Http\Controllers\Admin\TeacherController;
@@ -19,10 +19,15 @@ use App\Http\Controllers\ProfileController;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
+|
+| Đây là nơi bạn có thể đăng ký các web route cho ứng dụng của mình.
+|
 */
 
 // Trang chủ
-Route::get('/', fn () => view('welcome'));
+Route::get('/', function () {
+    return view('welcome');
+});
 
 // Các route xác thực (Laravel Breeze)
 require __DIR__.'/auth.php';
@@ -32,33 +37,33 @@ Route::middleware(['auth'])->group(function () {
     
     // --- DASHBOARD & PROFILE ---
     
-    Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
-
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+    
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // --- NHÓM QUẢN TRỊ (ADMIN) ---
+    // Chỉ thêm tiền tố URL là '/admin', không thêm tiền tố tên route
     Route::prefix('admin')->group(function () {
-        // Quản lý thông tin cá nhân
-        Route::get('settings', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('settings', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('settings', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        
+        // --- Quản lý dữ liệu học vụ ---
+        Route::resource('faculties', FacultyController::class);
+        Route::resource('degrees', DegreeController::class);
+        Route::resource('teachers', TeacherController::class);
+        Route::resource('terms', TermController::class);
+        Route::resource('courses', CourseController::class);
+        Route::resource('classes', CourseClassController::class);
+        Route::resource('assignments', AssignmentController::class);
+        
+        // --- Quản lý tính lương ---
+        Route::resource('payroll-parameters', PayrollParameterController::class);
+        Route::resource('class-size-coefficients', ClassSizeCoefficientController::class);
+        Route::resource('payrolls', PayrollController::class)->except(['edit', 'update']);
 
-        // --- NHÓM QUẢN LÝ DỮ LIỆU HỌC VỤ ---
-        
-        Route::resource('faculties', FacultyController::class);               // Khoa
-        Route::resource('degrees', DegreeController::class);                 // Bằng cấp
-        Route::resource('teachers', TeacherController::class);              // Giáo viên
-        Route::resource('terms', TermController::class);                    // Kỳ học
-        Route::resource('courses', CourseController::class);                // Học phần / Môn học
-        Route::resource('classes', CourseClassController::class);           // Lớp học phần
-        Route::resource('assignments', AssignmentController::class);        // Phân công giảng dạy
-        
-
-        // --- NHÓM QUẢN LÝ TÍNH LƯƠNG ---
-        
-        Route::resource('payroll-parameters', PayrollParameterController::class);  // Tham số tính lương
-        Route::resource('class-size-coefficients', ClassSizeCoefficientController::class); // Hệ số sĩ số
-        Route::resource('payrolls', PayrollController::class)->except(['edit', 'update']); // Bảng lương
-
-        // --- CHỨC NĂNG TẠO NHANH LỚP HỌC PHẦN ---
-        
+        // --- Chức năng đặc biệt cho Lớp học phần ---
         Route::get('classes/bulk/create', [CourseClassController::class, 'createBulk'])->name('classes.create_bulk');
         Route::post('classes/bulk', [CourseClassController::class, 'storeBulk'])->name('classes.store_bulk');
     });

@@ -4,90 +4,126 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
-use App\Models\Teacher;
 use App\Models\CourseClass;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 
 class AssignmentController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Hiển thị danh sách phân công đã thực hiện.
      */
     public function index()
     {
-        $assignments = Assignment::with(['teacher', 'courseClass.course', 'courseClass.term'])->latest()->paginate(15);
+        $assignments = Assignment::with(['teacher', 'courseClass.course', 'courseClass.term'])
+                                 ->latest()
+                                 ->paginate(15);
+
         return view('admin.assignments.index', compact('assignments'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Hiển thị form tạo phân công mới, chỉ hiển thị lớp chưa phân công.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $teachers = Teacher::where('is_active', true)->orderBy('full_name')->get();
-        
-        // Lấy danh sách các lớp CHƯA được phân công
-        $unassignedClasses = CourseClass::whereDoesntHave('assignment')->with(['course', 'term'])->get();
-        
+        // SỬA LẠI: Sắp xếp theo cột 'full_name' cho đúng với CSDL
+        $teachers = Teacher::orderBy('full_name')->get();
+
+        // Lấy các lớp chưa được phân công (không có assignment)
+        $query = CourseClass::whereDoesntHave('assignment')
+                            ->with(['course', 'term']);
+
+        // Nếu có từ khóa tìm kiếm
+        if ($request->has('search') && $request->search !== '') {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('class_code', 'like', '%' . $searchTerm . '%')
+                  ->orWhereHas('course', function ($qCourse) use ($searchTerm) {
+                      $qCourse->where('name', 'like', '%' . $searchTerm . '%');
+                  });
+            });
+        }
+
+        // Phân trang
+        $unassignedClasses = $query->latest()->paginate(10)->appends($request->query());
+
         return view('admin.assignments.create', compact('teachers', 'unassignedClasses'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Lưu phân công giảng viên cho nhiều lớp học phần.
      */
     public function store(Request $request)
     {
         $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
-            'course_class_id' => 'required|exists:course_classes,id|unique:assignments,course_class_id',
-            'notes' => 'nullable|string',
+            'course_class_ids' => 'required|array|min:1',
+            'course_class_ids.*' => 'exists:course_classes,id',
+        ], [
+            'teacher_id.required' => 'Vui lòng chọn một giảng viên.',
+            'course_class_ids.required' => 'Vui lòng chọn ít nhất một lớp học phần để phân công.',
         ]);
 
-        Assignment::create($request->all());
+        $teacherId = $request->teacher_id;
+        $classIds = $request->course_class_ids;
 
+        foreach ($classIds as $classId) {
+            Assignment::updateOrCreate(
+                ['course_class_id' => $classId],
+                ['teacher_id' => $teacherId]
+            );
+        }
+
+        // Sửa lại để bỏ tiền tố 'admin.'
         return redirect()->route('assignments.index')
-                         ->with('success', 'Phân công giảng dạy thành công.');
+                         ->with('success', 'Đã phân công thành công cho ' . count($classIds) . ' lớp học phần.');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Trang chi tiết (chưa dùng).
+     */
+    public function show(Assignment $assignment)
+    {
+        // Nếu cần, có thể return view('admin.assignments.show', ...)
+    }
+
+    /**
+     * Hiển thị form sửa phân công.
      */
     public function edit(Assignment $assignment)
     {
-        $teachers = Teacher::where('is_active', true)->orderBy('full_name')->get();
+        // SỬA LẠI: Sắp xếp theo cột 'full_name' cho đúng với CSDL
+        $teachers = Teacher::orderBy('full_name')->get();
 
-        // Lấy danh sách các lớp CHƯA được phân công, CỘNG VỚI lớp hiện tại của assignment này
-        $unassignedClasses = CourseClass::whereDoesntHave('assignment')
-                                        ->orWhere('id', $assignment->course_class_id)
-                                        ->with(['course', 'term'])->get();
-
-        return view('admin.assignments.edit', compact('assignment', 'teachers', 'unassignedClasses'));
+        return view('admin.assignments.edit', compact('assignment', 'teachers'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Cập nhật thông tin phân công.
      */
     public function update(Request $request, Assignment $assignment)
     {
         $request->validate([
             'teacher_id' => 'required|exists:teachers,id',
-            'course_class_id' => 'required|exists:course_classes,id|unique:assignments,course_class_id,' . $assignment->id,
-            'notes' => 'nullable|string',
         ]);
 
-        $assignment->update($request->all());
-
-        return redirect()->route('assignments.index')
-                         ->with('success', 'Cập nhật phân công thành công.');
+        $assignment->update([
+            'teacher_id' => $request->teacher_id,
+        ]);
+        
+        // Sửa lại để bỏ tiền tố 'admin.'
+        return redirect()->route('assignments.index')->with('success', 'Cập nhật phân công thành công.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Xóa phân công.
      */
     public function destroy(Assignment $assignment)
     {
         $assignment->delete();
-        return redirect()->route('assignments.index')
-                         ->with('success', 'Đã hủy phân công thành công.');
+
+        // Sửa lại để bỏ tiền tố 'admin.'
+        return redirect()->route('assignments.index')->with('success', 'Đã xóa phân công thành công.');
     }
 }
