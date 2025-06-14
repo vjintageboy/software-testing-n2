@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use App\Models\Course;
 use App\Models\CourseClass;
 use Illuminate\Support\Facades\DB;
+use App\Models\Payroll;
 
 class StatisticsController extends Controller
 {
@@ -356,5 +357,106 @@ class StatisticsController extends Controller
             'courseTermStats' => $courseTermStats,
             'enrollmentChartData' => $enrollmentChartData,
         ]);
+    }
+
+    /**
+     * UC4.1: Báo cáo tiền dạy của giáo viên trong một năm
+     */
+    public function teacherSalaryReport(Request $request)
+    {
+        $teachers = Teacher::orderBy('full_name')->get();
+        $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
+                     ->orderBy('year', 'desc')
+                     ->pluck('year');
+
+        $selectedTeacherId = $request->input('teacher_id');
+        $selectedYear = $request->input('year');
+        $payrolls = null;
+        $totalSalary = 0;
+
+        if ($request->isMethod('post') && $selectedTeacherId && $selectedYear) {
+            $payrolls = Payroll::with('term')
+                ->where('teacher_id', $selectedTeacherId)
+                ->whereHas('term', function ($query) use ($selectedYear) {
+                    $query->whereYear('start_date', $selectedYear);
+                })
+                ->get();
+            $totalSalary = $payrolls->sum('total_amount');
+        }
+
+        return view('admin.reports.teacher_salary', compact('teachers', 'years', 'selectedTeacherId', 'selectedYear', 'payrolls', 'totalSalary'));
+    }
+
+    /**
+     * UC4.2: Báo cáo tiền dạy của giáo viên một khoa
+     */
+    public function facultySalaryReport(Request $request)
+    {
+        $faculties = Faculty::orderBy('name')->get();
+        $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
+                     ->orderBy('year', 'desc')
+                     ->pluck('year');
+
+        $selectedFacultyId = $request->input('faculty_id');
+        $selectedYear = $request->input('year');
+        $reportData = null;
+        $totalFacultySalary = 0;
+
+        if ($request->isMethod('post') && $selectedFacultyId && $selectedYear) {
+            $reportData = Teacher::where('faculty_id', $selectedFacultyId)
+                ->with(['payrolls' => function ($query) use ($selectedYear) {
+                    $query->whereHas('term', function ($subQuery) use ($selectedYear) {
+                        $subQuery->whereYear('start_date', $selectedYear);
+                    });
+                }])
+                ->get()
+                ->map(function ($teacher) {
+                    $teacher->total_amount = $teacher->payrolls->sum('total_amount');
+                    return $teacher;
+                })
+                ->filter(function ($teacher) {
+                    return $teacher->total_amount > 0;
+                });
+
+            $totalFacultySalary = $reportData->sum('total_amount');
+        }
+
+        return view('admin.reports.faculty_salary', compact('faculties', 'years', 'selectedFacultyId', 'selectedYear', 'reportData', 'totalFacultySalary'));
+    }
+
+    /**
+     * UC4.3: Báo cáo tiền dạy của giáo viên toàn trường
+     */
+    public function schoolSalaryReport(Request $request)
+    {
+        $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        $selectedYear = $request->input('year');
+        $reportData = null;
+        $totalSchoolSalary = 0;
+
+        if ($request->isMethod('post') && $selectedYear) {
+            $reportData = Faculty::with(['teachers.payrolls' => function ($query) use ($selectedYear) {
+                    $query->whereHas('term', function ($subQuery) use ($selectedYear) {
+                        $subQuery->whereYear('start_date', $selectedYear);
+                    });
+                }])
+                ->get()
+                ->map(function ($faculty) {
+                    $faculty->total_amount = $faculty->teachers->reduce(function ($carry, $teacher) {
+                        return $carry + $teacher->payrolls->sum('total_amount');
+                    }, 0);
+                    return $faculty;
+                })
+                ->filter(function ($faculty) {
+                    return $faculty->total_amount > 0;
+                });
+
+            $totalSchoolSalary = $reportData->sum('total_amount');
+        }
+
+        return view('admin.reports.school_salary', compact('years', 'selectedYear', 'reportData', 'totalSchoolSalary'));
     }
 }

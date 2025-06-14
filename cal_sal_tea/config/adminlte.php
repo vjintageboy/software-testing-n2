@@ -257,13 +257,13 @@ return [
     */
 
     'use_route_url' => false,
-    'dashboard_url' => 'home',
+    'dashboard_url' => 'dashboard',
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => 'register',
     'password_reset_url' => 'password/reset',
     'password_email_url' => 'password/email',
-    'profile_url' => false,
+    'profile_url' => 'profile',
     'disable_darkmode_routes' => false,
 
     /*
@@ -383,23 +383,61 @@ return [
     [
         'header' => 'BÁO CÁO & THỐNG KÊ',
     ],
+    // [
+    //     'text' => 'Thống kê Giáo viên',
+    //     'route'  => 'admin.statistics.teachers',
+    //     'icon' => 'fas fa-fw fa-chart-bar',
+    // ],
+    // [ 
+    //     'text' => 'Thống kê Học phần',
+    //     'route'  => 'admin.statistics.courses',
+    //     'icon' => 'fas fa-fw fa-book',
+    // ],
+
     [
-        'text' => 'Thống kê Giáo viên',
-        'route'  => 'statistics.teachers',
-        'icon' => 'fas fa-fw fa-chart-bar',
-    ],
-    [ 
-        'text' => 'Thống kê Học phần',
-        'route'  => 'statistics.courses',
-        'icon' => 'fas fa-fw fa-book',
+        'text'    => 'Thống kê',
+        'icon'    => 'fas fa-fw fa-chart-pie',
+        'submenu' => [
+            [
+                'text' => 'Giáo viên',
+                'route'  => 'admin.statistics.teachers',
+                'icon' => 'fas fa-fw fa-user',
+            ],
+            [
+                'text' => 'Môn học',
+                'route'  => 'admin.statistics.courses',
+                'icon' => 'fas fa-fw fa-book',
+            ],
+        ],
     ],
 
+    [
+        'text'    => 'Báo cáo lương',
+        'icon'    => 'fas fa-fw fa-file-invoice-dollar',
+        'submenu' => [
+            [
+                'text' => 'Lương theo giáo viên',
+                'route'  => 'admin.reports.teacher_salary',
+                'icon' => 'fas fa-fw fa-user-tag',
+            ],
+            [
+                'text' => 'Lương theo khoa',
+                'route'  => 'admin.reports.faculty_salary',
+                'icon' => 'fas fa-fw fa-university',
+            ],
+            [
+                'text' => 'Lương toàn trường',
+                'route'  => 'admin.reports.school_salary',
+                'icon' => 'fas fa-fw fa-school',
+            ],
+        ],
+    ],
 
     // Tài khoản
     
     [
         'text' => 'Hồ sơ cá nhân',
-        'url' => 'admin/settings',
+        'route' => 'profile.edit',
         'icon' => 'fas fa-fw fa-user',
     ],
     // The 'menu' array continues here. The premature closing '],' was removed.

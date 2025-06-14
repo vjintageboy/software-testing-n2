@@ -48,4 +48,12 @@ class Teacher extends Model
     {
         return $this->hasMany(Assignment::class);
     }
+
+    /**
+     * Get the payrolls for the teacher.
+     */
+    public function payrolls()
+    {
+        return $this->hasMany(Payroll::class);
+    }
 }

@@ -72,7 +72,14 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('assignments', AssignmentController::class);
         // === ROUTE THỐNG KÊ ===
         // === ROUTE MỚI CHO THỐNG KÊ HỌC PHẦN ===
-        Route::get('statistics/courses', [\App\Http\Controllers\Admin\StatisticsController::class, 'courseStatistics'])->name('statistics.courses');
-        Route::get('statistics/teachers', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherStatistics'])->name('statistics.teachers');
+        Route::get('statistics/courses', [\App\Http\Controllers\Admin\StatisticsController::class, 'courseStatistics'])->name('admin.statistics.courses');
+        Route::get('statistics/teachers', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherStatistics'])->name('admin.statistics.teachers');
+
+        // === ROUTE BÁO CÁO LƯƠNG ===
+        Route::prefix('reports')->name('admin.reports.')->group(function () {
+            Route::match(['get', 'post'], 'teacher-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherSalaryReport'])->name('teacher_salary');
+            Route::match(['get', 'post'], 'faculty-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'facultySalaryReport'])->name('faculty_salary');
+            Route::match(['get', 'post'], 'school-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'schoolSalaryReport'])->name('school_salary');
+        });
     });
 });

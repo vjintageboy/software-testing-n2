@@ -10,7 +10,7 @@
     <div class="row">
         <div class="col-12">
             <x-adminlte-card title="Bộ lọc" theme="info" icon="fas fa-filter" collapsible>
-                <form method="GET" action="{{ route('statistics.teachers') }}">
+                <form method="GET" action="{{ route('admin.statistics.teachers') }}">
     <div class="row">
         <div class="col-md-4">
             <x-adminlte-select name="term_id" label="Chọn Học Kỳ">
