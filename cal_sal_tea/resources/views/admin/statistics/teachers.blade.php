@@ -14,20 +14,27 @@
     <div class="row">
         <div class="col-md-4">
             <x-adminlte-select name="term_id" label="Chọn Học Kỳ">
+                {{-- Option: Tất cả học kỳ --}}
+                <option value="" {{ (string)$selectedTermId === '' ? 'selected' : '' }}>
+                    Tất cả học kỳ
+                </option>
+
+                {{-- Option: Các học kỳ có trong danh sách --}}
                 @foreach($terms as $term)
-                    <option value="{{ $term->id }}" {{ $term->id == $selectedTermId ? 'selected' : '' }}>
+                    <option value="{{ $term->id }}" {{ (string)$term->id === (string)$selectedTermId ? 'selected' : '' }}>
                         {{ $term->name }}
                     </option>
                 @endforeach
             </x-adminlte-select>
         </div>
-        <div class="col-md-2">
+
+        <div class="col-md-2 d-flex align-items-end">
             <x-adminlte-button 
-                type="submit" 
-                label="Xem thống kê" 
-                theme="primary" 
+                type="submit"
+                label="Xem thống kê"
+                theme="primary"
                 icon="fas fa-search"
-                style="margin-top: 32px !important;"
+                style="margin-bottom: 5% !important;"
             />
         </div>
     </div>
@@ -40,13 +47,13 @@
     {{-- Các thẻ thông tin tổng quan --}}
     <div class="row">
         <div class="col-md-4">
-            <x-adminlte-info-box title="Tổng số Giáo viên" text="{{ $widgetData['totalTeachers'] }}" icon="fas fa-users text-info" theme="gradient-info"/>
+            <x-adminlte-info-box title="Tổng số Giáo viên" text="{{ $widgetData['totalTeachers'] }}" icon="fas fa-users text-info text-white" theme="gradient-info"/>
         </div>
         <div class="col-md-4">
-            <x-adminlte-info-box title="Học kỳ đang xem" text="{{ $widgetData['activeTermName'] }}" icon="fas fa-calendar-alt text-success" theme="gradient-success"/>
+            <x-adminlte-info-box title="Học kỳ đang xem" text="{{ $widgetData['activeTermName'] }}" icon="fas fa-calendar-alt text-success text-white" theme="gradient-success"/>
         </div>
         <div class="col-md-4">
-             <x-adminlte-info-box title="Tổng giờ quy đổi (trong kỳ)" text="{{ number_format($widgetData['totalHoursThisTerm'], 2) }} giờ" icon="fas fa-clock text-warning" theme="gradient-warning"/>
+             <x-adminlte-info-box title="Tổng giờ quy đổi (trong kỳ)" text="{{ number_format($widgetData['totalHoursThisTerm'], 2) }} giờ" icon="fas fa-clock text-warning text-white" theme="gradient-warning"/>
         </div>
     </div>
 

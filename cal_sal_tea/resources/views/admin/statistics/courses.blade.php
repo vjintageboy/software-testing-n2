@@ -18,25 +18,34 @@
                 @if($terms->isEmpty())
                     <option>Chưa có học kỳ nào</option>
                 @else
+                    {{-- Option: Tất cả học kỳ --}}
+                    <option value="" {{ (string)$selectedTermId === '' ? 'selected' : '' }}>
+                        Tất cả học kỳ
+                    </option>
+
+                    {{-- Option: Danh sách học kỳ --}}
                     @foreach($terms as $term)
-                        <option value="{{ $term->id }}" {{ $term->id == $selectedTermId ? 'selected' : '' }}>
+                        <option value="{{ $term->id }}" {{ (string)$term->id === (string)$selectedTermId ? 'selected' : '' }}>
                             {{ $term->name }}
                         </option>
                     @endforeach
                 @endif
             </x-adminlte-select>
         </div>
-        <div class="col-md-2">
+
+        <div class="col-md-2 d-flex align-items-end">
             <x-adminlte-button
                 type="submit"
                 label="Xem thống kê"
                 theme="primary"
                 icon="fas fa-search"
-                style="margin-top: 32px !important;"
+                style="margin-bottom: 5% !important;"
+                
             />
         </div>
     </div>
 </form>
+
 
             </x-adminlte-card>
         </div>
@@ -45,13 +54,13 @@
     {{-- Các thẻ thông tin --}}
     <div class="row">
         <div class="col-md-4">
-            <x-adminlte-info-box title="Tổng số Học phần" text="{{ $widgetData['totalUniqueCourses'] }}" icon="fas fa-book-open text-primary" theme="gradient-primary"/>
+            <x-adminlte-info-box title="Tổng số Học phần" text="{{ $widgetData['totalUniqueCourses'] }}" icon="fas fa-book-open text-white" theme="gradient-primary"/>
         </div>
         <div class="col-md-4">
-            <x-adminlte-info-box title="Tổng Lớp mở (trong kỳ)" text="{{ $widgetData['totalClassesInTerm'] }}" icon="fas fa-chalkboard text-info" theme="gradient-info"/>
+            <x-adminlte-info-box title="Tổng Lớp mở (trong kỳ)" text="{{ $widgetData['totalClassesInTerm'] }}" icon="fas fa-chalkboard text-info text-white" theme="gradient-info"/>
         </div>
         <div class="col-md-4">
-             <x-adminlte-info-box title="Tổng SV đăng ký (trong kỳ)" text="{{ number_format($widgetData['totalStudentsInTerm']) }}" icon="fas fa-user-graduate text-success" theme="gradient-success"/>
+             <x-adminlte-info-box title="Tổng SV đăng ký (trong kỳ)" text="{{ number_format($widgetData['totalStudentsInTerm']) }}" icon="fas fa-user-graduate text-success text-white" theme="gradient-success"/>
         </div>
     </div>
 
