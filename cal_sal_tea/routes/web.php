@@ -69,5 +69,9 @@ Route::middleware(['auth'])->group(function () {
         // THÊM ROUTE MỚI CHO VIỆC XÓA HÀNG LOẠT
         Route::delete('assignments/bulk-destroy', [AssignmentController::class, 'destroyBulk'])->name('assignments.destroyBulk');
         Route::resource('assignments', AssignmentController::class);
+        // === ROUTE THỐNG KÊ ===
+        // === ROUTE MỚI CHO THỐNG KÊ HỌC PHẦN ===
+        Route::get('statistics/courses', [\App\Http\Controllers\Admin\StatisticsController::class, 'courseStatistics'])->name('statistics.courses');
+        Route::get('statistics/teachers', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherStatistics'])->name('statistics.teachers');
     });
 });

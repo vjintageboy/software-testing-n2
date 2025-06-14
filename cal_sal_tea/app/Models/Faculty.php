@@ -20,4 +20,20 @@ class Faculty extends Model
         'abbreviation',
         'description',
     ];
+
+    /**
+     * Get the teachers for this faculty.
+     */
+    public function teachers()
+    {
+        return $this->hasMany(Teacher::class);
+    }
+
+    /**
+     * Get the courses for this faculty.
+     */
+    public function courses()
+    {
+        return $this->hasMany(Course::class);
+    }
 }

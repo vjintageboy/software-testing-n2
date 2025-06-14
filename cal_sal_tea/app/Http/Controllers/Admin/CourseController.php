@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\Faculty; // Thêm Faculty model
 use Illuminate\Http\Request;
 
 class CourseController extends Controller
@@ -13,7 +14,8 @@ class CourseController extends Controller
      */
     public function index()
     {
-        $courses = Course::latest()->paginate(10);
+        // Eager load quan hệ 'faculty' để tối ưu query
+        $courses = Course::with('faculty')->paginate(10);
         return view('admin.courses.index', compact('courses'));
     }
 
@@ -22,7 +24,9 @@ class CourseController extends Controller
      */
     public function create()
     {
-        return view('admin.courses.create');
+        // Lấy danh sách các khoa để hiển thị trong form
+        $faculties = Faculty::all();
+        return view('admin.courses.create', compact('faculties'));
     }
 
     /**
@@ -31,17 +35,23 @@ class CourseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'course_code' => 'required|string|max:50|unique:courses',
             'name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:255|unique:courses,course_code',
             'credits' => 'required|integer|min:0',
-            'standard_periods' => 'required|integer|min:1',
-            'coefficient' => 'required|numeric|min:0',
+            'faculty_id' => 'required|exists:faculties,id', // Validate faculty_id
         ]);
 
         Course::create($request->all());
 
-        return redirect()->route('courses.index')
-                         ->with('success', 'Tạo mới học phần thành công.');
+        return redirect()->route('courses.index')->with('success', 'Học phần đã được tạo thành công.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Course $course)
+    {
+        return view('admin.courses.show', compact('course'));
     }
 
     /**
@@ -49,7 +59,9 @@ class CourseController extends Controller
      */
     public function edit(Course $course)
     {
-        return view('admin.courses.edit', compact('course'));
+        // Lấy danh sách khoa cho form edit
+        $faculties = Faculty::all();
+        return view('admin.courses.edit', compact('course', 'faculties'));
     }
 
     /**
@@ -58,17 +70,15 @@ class CourseController extends Controller
     public function update(Request $request, Course $course)
     {
         $request->validate([
-            'course_code' => 'required|string|max:50|unique:courses,course_code,' . $course->id,
             'name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:255|unique:courses,course_code,' . $course->id,
             'credits' => 'required|integer|min:0',
-            'standard_periods' => 'required|integer|min:1',
-            'coefficient' => 'required|numeric|min:0',
+            'faculty_id' => 'required|exists:faculties,id', // Validate faculty_id
         ]);
 
         $course->update($request->all());
 
-        return redirect()->route('courses.index')
-                         ->with('success', 'Cập nhật học phần thành công.');
+        return redirect()->route('courses.index')->with('success', 'Học phần đã được cập nhật thành công.');
     }
 
     /**
@@ -76,13 +86,7 @@ class CourseController extends Controller
      */
     public function destroy(Course $course)
     {
-        try {
-            $course->delete();
-            return redirect()->route('courses.index')
-                             ->with('success', 'Đã xóa học phần thành công.');
-        } catch (\Exception $e) {
-            return redirect()->route('courses.index')
-                             ->with('error', 'Không thể xóa học phần này. Vui lòng thử lại.');
-        }
+        $course->delete();
+        return redirect()->route('courses.index')->with('success', 'Học phần đã được xóa thành công.');
     }
 }

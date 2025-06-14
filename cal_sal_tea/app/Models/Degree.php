@@ -19,4 +19,12 @@ class Degree extends Model
         'abbreviation', // Thêm trường mới vào đây
         'coefficient',
     ];
+
+    /**
+     * Get the teachers for this degree.
+     */
+    public function teachers()
+    {
+        return $this->hasMany(Teacher::class);
+    }
 }

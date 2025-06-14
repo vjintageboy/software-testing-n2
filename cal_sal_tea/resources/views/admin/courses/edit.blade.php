@@ -9,47 +9,41 @@
 @section('content')
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+            <x-adminlte-card title="Cập nhật thông tin" theme="primary" icon="fas fa-edit">
+                <form action="{{ route('courses.update', $course) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    
+                    <x-adminlte-input name="name" label="Tên Học phần" placeholder="Nhập tên học phần"
+                        fgroup-class="col-md-6" value="{{ old('name', $course->name) }}" required/>
+                    <x-adminlte-input name="course_code" label="Mã Học phần" placeholder="Nhập mã học phần"
+                        fgroup-class="col-md-6" value="{{ old('course_code', $course->course_code) }}" required/>
+                    <x-adminlte-input type="number" name="credits" label="Số tín chỉ" placeholder="Nhập số tín chỉ"
+                        fgroup-class="col-md-6" value="{{ old('credits', $course->credits) }}" min="0" required/>
+                        
+                    {{-- Thêm trường chọn Khoa --}}
+                    <x-adminlte-select name="faculty_id" label="Khoa" fgroup-class="col-md-6" required>
+                         <x-slot name="prependSlot">
+                            <div class="input-group-text bg-gradient-info">
+                                <i class="fas fa-university"></i>
+                            </div>
+                        </x-slot>
+                        <option value="">-- Chọn Khoa --</option>
+                        @foreach($faculties as $faculty)
+                            <option value="{{ $faculty->id }}" {{ old('faculty_id', $course->faculty_id) == $faculty->id ? 'selected' : '' }}>
+                                {{ $faculty->name }}
+                            </option>
+                        @endforeach
+                    </x-adminlte-select>
 
-                    <form action="{{ route('courses.update', $course) }}" method="POST">
-                        @csrf
-                        @method('PUT')
-                        <div class="form-group">
-                            <label for="course_code">Mã Học phần</label>
-                            <input type="text" name="course_code" class="form-control" id="course_code" value="{{ old('course_code', $course->course_code) }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="name">Tên Học phần</label>
-                            <input type="text" name="name" class="form-control" id="name" value="{{ old('name', $course->name) }}" required>
-                        </div>
-                        {{-- Thêm ô nhập liệu mới --}}
-                        <div class="form-group">
-                            <label for="credits">Số tín chỉ</label>
-                            <input type="number" name="credits" class="form-control" id="credits" value="{{ old('credits', $course->credits) }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="standard_periods">Số tiết quy chuẩn</label>
-                            <input type="number" name="standard_periods" class="form-control" id="standard_periods" value="{{ old('standard_periods', $course->standard_periods) }}" required>
-                        </div>
-                         <div class="form-group">
-                            <label for="coefficient">Hệ số học phần</label>
-                            <input type="number" step="0.01" name="coefficient" class="form-control" id="coefficient" value="{{ old('coefficient', $course->coefficient) }}" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Cập nhật</button>
-                        <a href="{{ route('courses.index') }}" class="btn btn-secondary">Hủy</a>
-                    </form>
-                </div>
-            </div>
+                    <div class="col-12">
+                        <x-adminlte-button type="submit" label="Cập nhật" theme="primary" icon="fas fa-save"/>
+                        <a href="{{ route('courses.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </form>
+            </x-adminlte-card>
         </div>
     </div>
 @stop

@@ -190,7 +190,7 @@ return [
     |
     */
 
-    'classes_body' => '',
+    'classes_body' => 'layout-fixed',
     'classes_brand' => '',
     'classes_brand_text' => '',
     'classes_content_wrapper' => '',
@@ -379,6 +379,20 @@ return [
         'route' => 'payrolls.index',
         'icon'  => 'fas fa-fw fa-file-invoice-dollar',
     ],
+     // Thêm mục thống kê
+    [
+        'header' => 'BÁO CÁO & THỐNG KÊ',
+    ],
+    [
+        'text' => 'Thống kê Giáo viên',
+        'route'  => 'statistics.teachers',
+        'icon' => 'fas fa-fw fa-chart-bar',
+    ],
+    [ 
+        'text' => 'Thống kê Học phần',
+        'route'  => 'statistics.courses',
+        'icon' => 'fas fa-fw fa-book',
+    ],
 
 
     // Tài khoản
@@ -430,7 +444,7 @@ return [
 
     'plugins' => [
         'Datatables' => [
-            'active' => false,
+            'active' => true,
             'files' => [
                 [
                     'type' => 'js',
