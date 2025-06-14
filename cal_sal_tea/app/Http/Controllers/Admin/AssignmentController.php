@@ -33,7 +33,7 @@ class AssignmentController extends Controller
         }
 
         // Thêm điều kiện lọc theo kỳ học
-        if ($request->has('term_id') && $request->term_id !== '') {
+        if ($request->has('term_id') && $request->term_id !== '' && $request->term_id !== null) {
             $query->whereHas('courseClass', function ($q) use ($request) {
                 $q->where('term_id', $request->term_id);
             });
@@ -52,6 +52,7 @@ class AssignmentController extends Controller
     {
         // SỬA LẠI: Sắp xếp theo cột 'full_name' cho đúng với CSDL
         $teachers = Teacher::orderBy('full_name')->get();
+        $terms = Term::orderBy('start_date', 'desc')->get();
 
         // Lấy các lớp chưa được phân công (không có assignment)
         $query = CourseClass::whereDoesntHave('assignment')
@@ -68,10 +69,15 @@ class AssignmentController extends Controller
             });
         }
 
+        // Thêm điều kiện lọc theo kỳ học
+        if ($request->has('term_id') && $request->term_id !== '' && $request->term_id !== null) {
+            $query->where('term_id', $request->term_id);
+        }
+
         // Phân trang
         $unassignedClasses = $query->latest()->paginate(10)->appends($request->query());
 
-        return view('admin.assignments.create', compact('teachers', 'unassignedClasses'));
+        return view('admin.assignments.create', compact('teachers', 'unassignedClasses', 'terms'));
     }
 
     /**

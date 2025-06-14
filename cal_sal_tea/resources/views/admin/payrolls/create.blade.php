@@ -31,6 +31,7 @@
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="alert alert-warning">
                             <p><b>Lưu ý:</b> Việc tính lương sẽ xóa toàn bộ bảng lương cũ của kì học đã chọn (nếu có) và tính toán lại từ đầu dựa trên các phân công và tham số hiện tại.</p>
                         </div>

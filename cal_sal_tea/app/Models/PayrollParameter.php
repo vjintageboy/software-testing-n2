@@ -11,7 +11,8 @@ class PayrollParameter extends Model
 
     protected $fillable = [
         'base_pay_per_period',
-        'effective_date',
         'description',
+        'valid_from',
+        'valid_to',
     ];
 }

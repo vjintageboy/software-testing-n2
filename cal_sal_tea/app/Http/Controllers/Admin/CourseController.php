@@ -27,7 +27,7 @@ class CourseController extends Controller
         }
 
         // Lọc theo kỳ học
-        if ($request->has('term_id') && $request->term_id !== '') {
+        if ($request->has('term_id') && $request->term_id !== '' && $request->term_id !== null) {
             $query->whereHas('courseClasses', function($q) use ($request) {
                 $q->where('term_id', $request->term_id);
             });

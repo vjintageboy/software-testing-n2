@@ -13,6 +13,8 @@ class ClassSizeCoefficient extends Model
         'min_students',
         'max_students',
         'coefficient',
+        'valid_from',
+        'valid_to',
         'description',
     ];
 }

@@ -16,10 +16,22 @@
                 <form action="{{ route('assignments.create') }}" method="GET" class="form-inline">
                     <div class="input-group w-100">
                         <input type="text" name="search" class="form-control" placeholder="Tìm theo mã lớp hoặc tên học phần..." value="{{ request('search') }}">
+                        <select name="term_id" class="form-control" onchange="this.form.submit()">
+                            <option value="">Tất cả kỳ học</option>
+                            @foreach($terms as $term)
+                                <option value="{{ $term->id }}" {{ request('term_id') == $term->id ? 'selected' : '' }}>
+                                    {{ $term->name }} ({{ $term->academic_year }})
+                                </option>
+                            @endforeach
+                        </select>
                         <div class="input-group-append">
-                            <button class="btn btn-secondary" type="submit">
-                                <i class="fas fa-search mr-1"></i> Tìm kiếm
-                            </button>
+                            
+
+                            @if(request('search') || request('term_id'))
+                                <a href="{{ route('assignments.create') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </form>

@@ -28,8 +28,13 @@
                             <input type="number" name="base_pay_per_period" class="form-control" id="base_pay_per_period" value="{{ old('base_pay_per_period') }}" required>
                         </div>
                         <div class="form-group">
-                            <label for="effective_date">Ngày có hiệu lực</label>
-                            <input type="date" name="effective_date" class="form-control" id="effective_date" value="{{ old('effective_date') }}" required>
+                            <label for="valid_from">Ngày có hiệu lực</label>
+                            <input type="date" name="valid_from" class="form-control" id="valid_from" value="{{ old('valid_from') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="valid_to">Ngày hết hiệu lực</label>
+                            <input type="date" name="valid_to" class="form-control" id="valid_to" value="{{ old('valid_to') }}">
+                            <small class="form-text text-muted">Để trống nếu đang áp dụng</small>
                         </div>
                         <div class="form-group">
                             <label for="description">Mô tả</label>

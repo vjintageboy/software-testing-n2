@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ClassSizeCoefficient;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class ClassSizeCoefficientController extends Controller
 {
@@ -31,16 +32,35 @@ class ClassSizeCoefficientController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'min_students' => 'required|integer|min:0',
-            'max_students' => 'required|integer|gte:min_students',
-            'coefficient' => 'required|numeric|min:0',
-            'description' => 'nullable|string|max:255',
+            'min_students' => 'required|integer',
+            'max_students' => 'nullable|integer',
+            'coefficient' => 'required|numeric',
+            'valid_from' => 'required|date',
         ]);
-
-        ClassSizeCoefficient::create($request->all());
-
-        return redirect()->route('class-size-coefficients.index')
-                         ->with('success', 'Tạo mới hệ số thành công.');
+    
+        $validFrom = Carbon::parse($request->input('valid_from'));
+    
+        // Tương tự, tìm và chốt hệ số cũ đang có hiệu lực
+        // (Logic này có thể cần điều chỉnh nếu bạn muốn quản lý các khoảng min/max phức tạp hơn,
+        // nhưng đây là logic cơ bản để đóng các quy tắc cũ)
+        $currentActiveCoefficients = ClassSizeCoefficient::whereNull('valid_to')->get();
+        foreach($currentActiveCoefficients as $currentActiveCoefficient) {
+            $endDateForOldParam = $validFrom->copy()->subDay();
+            $currentActiveCoefficient->update(['valid_to' => $endDateForOldParam]);
+        }
+        
+    
+        // Tạo hệ số mới
+        ClassSizeCoefficient::create([
+            'min_students' => $request->input('min_students'),
+            'max_students' => $request->input('max_students'),
+            'coefficient' => $request->input('coefficient'),
+            'valid_from' => $validFrom,
+            'valid_to' => null,
+        ]);
+    
+        return redirect()->route('admin.class_size_coefficients.index')
+                         ->with('success', 'Đã thêm mới và cập nhật lịch sử hệ số thành công.');
     }
 
     /**

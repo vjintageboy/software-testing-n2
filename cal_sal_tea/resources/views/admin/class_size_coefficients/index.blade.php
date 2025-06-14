@@ -29,6 +29,8 @@
                                 <th>Sĩ số tối thiểu</th>
                                 <th>Sĩ số tối đa</th>
                                 <th>Hệ số</th>
+                                <th>Hiệu lực từ</th>
+                                <th>Hiệu lực đến</th>
                                 <th>Mô tả</th>
                                 <th style="width: 150px;">Hành động</th>
                             </tr>
@@ -39,6 +41,8 @@
                                     <td>{{ $coefficient->min_students }}</td>
                                     <td>{{ $coefficient->max_students }}</td>
                                     <td>{{ number_format($coefficient->coefficient, 2) }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($coefficient->valid_from)->format('d/m/Y') }}</td>
+                                    <td>{{ $coefficient->valid_to ? \Carbon\Carbon::parse($coefficient->valid_to)->format('d/m/Y') : 'Đang áp dụng' }}</td>
                                     <td>{{ $coefficient->description }}</td>
                                     <td>
                                         <a href="{{ route('class-size-coefficients.edit', $coefficient) }}" class="btn btn-sm btn-info">

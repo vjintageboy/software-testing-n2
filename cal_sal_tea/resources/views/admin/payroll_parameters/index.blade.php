@@ -27,7 +27,8 @@
                         <thead>
                             <tr>
                                 <th>Đơn giá / Tiết (VNĐ)</th>
-                                <th>Áp dụng từ ngày</th>
+                                <th>Hiệu lực từ</th>
+                                <th>Hiệu lực đến</th>
                                 <th>Mô tả</th>
                                 <th style="width: 150px;">Hành động</th>
                             </tr>
@@ -36,7 +37,8 @@
                             @forelse($parameters as $parameter)
                                 <tr>
                                     <td>{{ number_format($parameter->base_pay_per_period, 0, ',', '.') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($parameter->effective_date)->format('d/m/Y') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($parameter->valid_from)->format('d/m/Y') }}</td>
+                                    <td>{{ $parameter->valid_to ? \Carbon\Carbon::parse($parameter->valid_to)->format('d/m/Y') : 'Đang áp dụng' }}</td>
                                     <td>{{ $parameter->description }}</td>
                                     <td>
                                         <a href="{{ route('payroll-parameters.edit', $parameter) }}" class="btn btn-sm btn-info">Sửa</a>

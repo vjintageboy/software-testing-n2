@@ -36,7 +36,7 @@ class CourseClassController extends Controller
         }
 
         // Thêm điều kiện lọc theo kỳ học
-        if ($request->has('term_id') && $request->term_id !== '') {
+        if ($request->has('term_id') && $request->term_id !== '' && $request->term_id !== null) {
             $query->where('term_id', $request->term_id);
         }
 

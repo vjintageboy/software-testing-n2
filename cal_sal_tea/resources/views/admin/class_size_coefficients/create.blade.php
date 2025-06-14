@@ -36,6 +36,15 @@
                             <input type="number" step="0.01" name="coefficient" class="form-control" id="coefficient" value="{{ old('coefficient') }}" required>
                         </div>
                         <div class="form-group">
+                            <label for="valid_from">Ngày có hiệu lực</label>
+                            <input type="date" name="valid_from" class="form-control" id="valid_from" value="{{ old('valid_from') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="valid_to">Ngày hết hiệu lực</label>
+                            <input type="date" name="valid_to" class="form-control" id="valid_to" value="{{ old('valid_to') }}">
+                            <small class="form-text text-muted">Để trống nếu đang áp dụng</small>
+                        </div>
+                        <div class="form-group">
                             <label for="description">Mô tả</label>
                             <input type="text" name="description" class="form-control" id="description" placeholder="Ví dụ: Lớp đông" value="{{ old('description') }}">
                         </div>

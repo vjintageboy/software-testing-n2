@@ -36,7 +36,7 @@ class StatisticsController extends Controller
         $selectedTerm = null;
         $viewSelectedTermId = ''; // Giá trị sẽ được select trong dropdown ở view, rỗng nghĩa là "Tất cả"
 
-        if ($requestedTermId === '') { // Người dùng chọn "Tất cả học kỳ"
+        if ($requestedTermId === '' || $requestedTermId === null) { // Người dùng chọn "Tất cả học kỳ"
             // $selectedTerm vẫn là null
             // $viewSelectedTermId vẫn là ''
         } elseif (is_numeric($requestedTermId)) { // Người dùng chọn một kỳ cụ thể
@@ -45,14 +45,12 @@ class StatisticsController extends Controller
                 $selectedTerm = $term;
                 $viewSelectedTermId = $term->id;
             }
-            // Nếu $requestedTermId không hợp lệ, $selectedTerm vẫn là null => coi như "Tất cả"
-        } else { // Tải trang lần đầu ($requestedTermId là null) hoặc giá trị không mong muốn
-            $activeTerm = Term::getActiveTerm(); // Mặc định là kỳ đang hoạt động
+        } else { // Initial load or non-standard
+            $activeTerm = Term::getActiveTerm();
             if ($activeTerm) {
                 $selectedTerm = $activeTerm;
                 $viewSelectedTermId = $activeTerm->id;
             }
-            // Nếu không có kỳ active, $selectedTerm vẫn là null => coi như "Tất cả"
         }
         $isAllTerms = ($selectedTerm === null);
 
@@ -220,143 +218,143 @@ class StatisticsController extends Controller
     }
 
     public function courseStatistics(Request $request)
-{
-    // 1. Dữ liệu tổng quan không phụ thuộc học kỳ
-    $widgetData = [
-        'totalUniqueCourses' => Course::count(),
-    ];
+    {
+        // 1. Dữ liệu tổng quan không phụ thuộc học kỳ
+        $widgetData = [
+            'totalUniqueCourses' => Course::count(),
+        ];
 
-    // 2. Dữ liệu thống kê phụ thuộc vào học kỳ được chọn
-    $terms = Term::orderBy('start_date', 'desc')->get();
-    $requestedTermId = $request->input('term_id');
+        // 2. Dữ liệu thống kê phụ thuộc vào học kỳ được chọn
+        $terms = Term::orderBy('start_date', 'desc')->get();
+        $requestedTermId = $request->input('term_id');
 
-    $selectedTerm = null;
-    $viewSelectedTermId = '';
+        $selectedTerm = null;
+        $viewSelectedTermId = '';
 
-    if ($requestedTermId === '') { // "All Terms"
-        // $selectedTerm remains null
-    } elseif (is_numeric($requestedTermId)) {
-        $term = Term::find($requestedTermId);
-        if ($term) {
-            $selectedTerm = $term;
-            $viewSelectedTermId = $term->id;
+        if ($requestedTermId === '') { // "All Terms"
+            // $selectedTerm remains null
+        } elseif (is_numeric($requestedTermId)) {
+            $term = Term::find($requestedTermId);
+            if ($term) {
+                $selectedTerm = $term;
+                $viewSelectedTermId = $term->id;
+            }
+        } else { // Initial load or non-standard
+            $activeTerm = Term::getActiveTerm();
+            if ($activeTerm) {
+                $selectedTerm = $activeTerm;
+                $viewSelectedTermId = $activeTerm->id;
+            }
         }
-    } else { // Initial load or non-standard
-        $activeTerm = Term::getActiveTerm();
-        if ($activeTerm) {
-            $selectedTerm = $activeTerm;
-            $viewSelectedTermId = $activeTerm->id;
-        }
-    }
-    $isAllTerms = ($selectedTerm === null);
+        $isAllTerms = ($selectedTerm === null);
         
-    $facultyChartData = ['labels' => [], 'data' => []];
-    $creditsChartData = ['labels' => [], 'data' => []];
-    $courseTermStats = [];
-    $totalClassesInTerm = 0;
-    $totalStudentsInTerm = 0;
-    $enrollmentChartData = ['labels' => [], 'data' => []];
+        $facultyChartData = ['labels' => [], 'data' => []];
+        $creditsChartData = ['labels' => [], 'data' => []];
+        $courseTermStats = [];
+        $totalClassesInTerm = 0;
+        $totalStudentsInTerm = 0;
+        $enrollmentChartData = ['labels' => [], 'data' => []];
 
-    if ($isAllTerms) {
-        $coursesPerFaculty = Faculty::withCount('courses')->orderBy('courses_count', 'desc')->get();
-        $coursesByCredits = Course::query()
-            ->select('credits', DB::raw('count(courses.id) as count'))
+        if ($isAllTerms) {
+            $coursesPerFaculty = Faculty::withCount('courses')->orderBy('courses_count', 'desc')->get();
+            $coursesByCredits = Course::query()
+                ->select('credits', DB::raw('count(courses.id) as count'))
+                ->groupBy('credits')
+                ->orderBy('credits')
+                ->get();
+            $classesInTerm = CourseClass::with('course.faculty')->get();
+            $widgetData['activeTermName'] = 'Tất cả học kỳ';
+        } else { // Một kỳ cụ thể được chọn
+            $coursesPerFaculty = Faculty::withCount(['courses' => function ($query) use ($selectedTerm) {
+                $query->whereHas('courseClasses', function ($subQuery) use ($selectedTerm) {
+                    $subQuery->where('term_id', $selectedTerm->id);
+                });
+            }])
+            ->orderBy('courses_count', 'desc')
+            ->get();
+
+            $coursesByCredits = Course::whereHas('courseClasses', function ($query) use ($selectedTerm) {
+                $query->where('term_id', $selectedTerm->id);
+            })
+            ->select('credits', DB::raw('count(DISTINCT courses.id) as count')) // Đảm bảo đếm courses.id duy nhất
             ->groupBy('credits')
             ->orderBy('credits')
             ->get();
-        $classesInTerm = CourseClass::with('course.faculty')->get();
-        $widgetData['activeTermName'] = 'Tất cả học kỳ';
-    } else { // Một kỳ cụ thể được chọn
-        $coursesPerFaculty = Faculty::withCount(['courses' => function ($query) use ($selectedTerm) {
-            $query->whereHas('courseClasses', function ($subQuery) use ($selectedTerm) {
-                $subQuery->where('term_id', $selectedTerm->id);
-            });
-        }])
-        ->orderBy('courses_count', 'desc')
-        ->get();
 
-        $coursesByCredits = Course::whereHas('courseClasses', function ($query) use ($selectedTerm) {
-            $query->where('term_id', $selectedTerm->id);
-        })
-        ->select('credits', DB::raw('count(DISTINCT courses.id) as count')) // Đảm bảo đếm courses.id duy nhất
-        ->groupBy('credits')
-        ->orderBy('credits')
-        ->get();
-
-        $classesInTerm = CourseClass::with('course.faculty')
-            ->where('term_id', $selectedTerm->id)
-            ->get();
-        $widgetData['activeTermName'] = $selectedTerm->name;
-    }
-
-    $facultyChartData = [
-        'labels' => $coursesPerFaculty->pluck('name'),
-        'data' => $coursesPerFaculty->pluck('courses_count'),
-    ];
-    $creditsChartData = [
-        'labels' => $coursesByCredits->pluck('credits')->map(fn ($c) => $c . ' tín chỉ'),
-        'data' => $coursesByCredits->pluck('count'),
-    ];
-
-    if ($classesInTerm->isNotEmpty()) {
-        $totalClassesInTerm = $classesInTerm->count();
-        $totalStudentsInTerm = $classesInTerm->sum('number_of_students');
-        $classesByCourse = $classesInTerm->groupBy('course_id');
-        foreach ($classesByCourse as $courseId => $classes) {
-            $course = $classes->first()->course;
-            if (!$course) continue; // Bỏ qua nếu không tìm thấy thông tin học phần
-
-            $totalStudents = $classes->sum('number_of_students');
-            
-            $courseTermStats[] = [
-                'course_name' => $course->name,
-                'course_code' => $course->course_code,
-                'faculty_name' => optional($course->faculty)->name ?? 'Chưa xác định',
-                'class_count' => $classes->count(),
-                'total_students' => $totalStudents,
-            ];
+            $classesInTerm = CourseClass::with('course.faculty')
+                ->where('term_id', $selectedTerm->id)
+                ->get();
+            $widgetData['activeTermName'] = $selectedTerm->name;
         }
+
+        $facultyChartData = [
+            'labels' => $coursesPerFaculty->pluck('name'),
+            'data' => $coursesPerFaculty->pluck('courses_count'),
+        ];
+        $creditsChartData = [
+            'labels' => $coursesByCredits->pluck('credits')->map(fn ($c) => $c . ' tín chỉ'),
+            'data' => $coursesByCredits->pluck('count'),
+        ];
+
+        if ($classesInTerm->isNotEmpty()) {
+            $totalClassesInTerm = $classesInTerm->count();
+            $totalStudentsInTerm = $classesInTerm->sum('number_of_students');
+            $classesByCourse = $classesInTerm->groupBy('course_id');
+            foreach ($classesByCourse as $courseId => $classes) {
+                $course = $classes->first()->course;
+                if (!$course) continue; // Bỏ qua nếu không tìm thấy thông tin học phần
+
+                $totalStudents = $classes->sum('number_of_students');
+                
+                $courseTermStats[] = [
+                    'course_name' => $course->name,
+                    'course_code' => $course->course_code,
+                    'faculty_name' => optional($course->faculty)->name ?? 'Chưa xác định',
+                    'class_count' => $classes->count(),
+                    'total_students' => $totalStudents,
+                ];
+            }
+        }
+        
+        // Sắp xếp học phần theo tổng sinh viên đăng ký giảm dần
+        $courseTermStats = collect($courseTermStats)->sortByDesc('total_students')->values();
+        
+        // Dữ liệu cho biểu đồ top học phần
+        $topCoursesByEnrollment = $courseTermStats->take(15);
+        $enrollmentChartData = [
+             'labels' => $topCoursesByEnrollment->pluck('course_name'),
+             'data' => $topCoursesByEnrollment->pluck('total_students'),
+        ];
+
+        $widgetData['totalClassesInTerm'] = $totalClassesInTerm;
+        $widgetData['totalStudentsInTerm'] = $totalStudentsInTerm;
+
+        // return view('admin.statistics.courses', compact( // Sửa tương tự
+        //     'widgetData',
+        //     'facultyChartData',
+        //     'creditsChartData',
+        //     'terms',
+        //     'selectedTermId' => $viewSelectedTermId,
+        //     'courseTermStats',
+        //     'enrollmentChartData'
+        // ));
+        $dataToCourseView = [
+            'widgetData',
+            'facultyChartData',
+            'creditsChartData',
+            'terms',
+            'selectedTermId' => $viewSelectedTermId,
+            'courseTermStats',
+            'enrollmentChartData'
+        ];
+        return view('admin.statistics.courses', [
+            'widgetData' => $widgetData,
+            'facultyChartData' => $facultyChartData,
+            'creditsChartData' => $creditsChartData,
+            'terms' => $terms,
+            'selectedTermId' => $viewSelectedTermId,
+            'courseTermStats' => $courseTermStats,
+            'enrollmentChartData' => $enrollmentChartData,
+        ]);
     }
-    
-    // Sắp xếp học phần theo tổng sinh viên đăng ký giảm dần
-    $courseTermStats = collect($courseTermStats)->sortByDesc('total_students')->values();
-    
-    // Dữ liệu cho biểu đồ top học phần
-    $topCoursesByEnrollment = $courseTermStats->take(15);
-    $enrollmentChartData = [
-         'labels' => $topCoursesByEnrollment->pluck('course_name'),
-         'data' => $topCoursesByEnrollment->pluck('total_students'),
-    ];
-
-    $widgetData['totalClassesInTerm'] = $totalClassesInTerm;
-    $widgetData['totalStudentsInTerm'] = $totalStudentsInTerm;
-
-    // return view('admin.statistics.courses', compact( // Sửa tương tự
-    //     'widgetData',
-    //     'facultyChartData',
-    //     'creditsChartData',
-    //     'terms',
-    //     'selectedTermId' => $viewSelectedTermId,
-    //     'courseTermStats',
-    //     'enrollmentChartData'
-    // ));
-    $dataToCourseView = [
-        'widgetData',
-        'facultyChartData',
-        'creditsChartData',
-        'terms',
-        'selectedTermId' => $viewSelectedTermId,
-        'courseTermStats',
-        'enrollmentChartData'
-    ];
-    return view('admin.statistics.courses', [
-        'widgetData' => $widgetData,
-        'facultyChartData' => $facultyChartData,
-        'creditsChartData' => $creditsChartData,
-        'terms' => $terms,
-        'selectedTermId' => $viewSelectedTermId,
-        'courseTermStats' => $courseTermStats,
-        'enrollmentChartData' => $enrollmentChartData,
-    ]);
-}
 }
