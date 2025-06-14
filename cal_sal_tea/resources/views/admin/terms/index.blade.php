@@ -50,11 +50,15 @@
                                     <td>{{ \Carbon\Carbon::parse($term->start_date)->format('d/m/Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($term->end_date)->format('d/m/Y') }}</td>
                                     <td>
-                                        <a href="{{ route('terms.edit', $term) }}" class="btn btn-sm btn-info">Sửa</a>
+                                        <a href="{{ route('terms.edit', $term) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
                                         <form action="{{ route('terms.destroy', $term) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">Xóa</button>
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa kì học này?')">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>

@@ -62,13 +62,13 @@
                                 <td>{{ $courseClass->number_of_students }}</td>
                                 <td>{{ $courseClass->css_coefficient }}</td>
                                 <td>
-                                    <a href="{{ route('classes.edit', $courseClass->id) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ route('classes.edit', $courseClass->id) }}" class="btn btn-sm btn-info">
                                         <i class="fas fa-edit"></i> Sửa
                                     </a>
-                                    <form action="{{ route('classes.destroy', $courseClass->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp học phần này?');">
+                                    <form action="{{ route('classes.destroy', $courseClass->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa lớp học phần này?')">
                                             <i class="fas fa-trash"></i> Xóa
                                         </button>
                                     </form>

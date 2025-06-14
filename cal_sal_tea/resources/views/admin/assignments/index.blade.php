@@ -65,18 +65,14 @@
                                         ({{ $assignment->courseClass->class_code ?? 'N/A' }})
                                     </td>
                                     <td>
-                                        <a href="{{ route('assignments.edit', $assignment) }}" class="btn btn-xs btn-warning" title="Sửa">
-                                            <i class="fas fa-edit"></i>
+                                        <a href="{{ route('assignments.edit', $assignment) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-edit"></i> Sửa
                                         </a>
-
-                                        {{-- XÓA ĐƠN (form riêng, ngoài form chính) --}}
-                                        <form action="{{ route('assignments.destroy', $assignment) }}" method="POST" 
-                                            onsubmit="return confirm('Bạn có chắc chắn muốn xóa phân công này không?');"
-                                            style="display:inline-block;">
+                                        <form action="{{ route('assignments.destroy', $assignment) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-xs btn-danger" title="Xóa">
-                                                <i class="fas fa-trash-alt"></i>
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa phân công này?')">
+                                                <i class="fas fa-trash"></i> Xóa
                                             </button>
                                         </form>
                                     </td>

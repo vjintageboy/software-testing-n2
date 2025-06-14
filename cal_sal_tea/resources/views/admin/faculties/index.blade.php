@@ -51,11 +51,15 @@
                                         <td>{{ $faculty->abbreviation }}</td>
                                         <td>{{ $faculty->description }}</td>
                                         <td>
-                                            <a href="{{ route('faculties.edit', $faculty) }}" class="btn btn-sm btn-info">Sửa</a>
+                                            <a href="{{ route('faculties.edit', $faculty) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-edit"></i> Sửa
+                                            </a>
                                             <form action="{{ route('faculties.destroy', $faculty) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">Xóa</button>
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa khoa này?')">
+                                                    <i class="fas fa-trash"></i> Xóa
+                                                </button>
                                             </form>
                                         </td>
                                     </tr>
