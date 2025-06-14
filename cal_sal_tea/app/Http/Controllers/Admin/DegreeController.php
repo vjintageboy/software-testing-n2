@@ -11,9 +11,17 @@ class DegreeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $degrees = Degree::latest()->paginate(10);
+        $query = Degree::query();
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('abbreviation', 'like', "%{$search}%");
+        }
+
+        $degrees = $query->latest()->paginate(10);
         return view('admin.degrees.index', compact('degrees'));
     }
 

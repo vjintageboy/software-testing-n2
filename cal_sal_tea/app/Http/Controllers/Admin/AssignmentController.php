@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\CourseClass;
 use App\Models\Teacher;
+use App\Models\Term;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -14,13 +15,34 @@ class AssignmentController extends Controller
     /**
      * Hiển thị danh sách phân công đã thực hiện.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $assignments = Assignment::with(['teacher', 'courseClass.course', 'courseClass.term'])
-                                 ->latest()
-                                 ->paginate(15);
+        $query = Assignment::with(['teacher', 'courseClass.course', 'courseClass.term']);
 
-        return view('admin.assignments.index', compact('assignments'));
+        // Thêm điều kiện tìm kiếm nếu có
+        if ($request->has('search') && $request->search !== '') {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->whereHas('teacher', function ($qTeacher) use ($searchTerm) {
+                    $qTeacher->where('full_name', 'like', '%' . $searchTerm . '%');
+                })
+                ->orWhereHas('courseClass.course', function ($qCourse) use ($searchTerm) {
+                    $qCourse->where('name', 'like', '%' . $searchTerm . '%');
+                });
+            });
+        }
+
+        // Thêm điều kiện lọc theo kỳ học
+        if ($request->has('term_id') && $request->term_id !== '') {
+            $query->whereHas('courseClass', function ($q) use ($request) {
+                $q->where('term_id', $request->term_id);
+            });
+        }
+
+        $assignments = $query->latest()->paginate(15)->appends($request->query());
+        $terms = Term::orderBy('academic_year', 'desc')->orderBy('name')->get();
+
+        return view('admin.assignments.index', compact('assignments', 'terms'));
     }
 
     /**

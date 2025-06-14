@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Faculty; // Thêm Faculty model
+use App\Models\Term;
 use Illuminate\Http\Request;
 
 class CourseController extends Controller
@@ -12,11 +13,30 @@ class CourseController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Eager load quan hệ 'faculty' để tối ưu query
-        $courses = Course::with('faculty')->paginate(10);
-        return view('admin.courses.index', compact('courses'));
+        $query = Course::with(['faculty', 'courseClasses.term']);
+        
+        // Tìm kiếm
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('course_code', 'like', "%{$search}%");
+            });
+        }
+
+        // Lọc theo kỳ học
+        if ($request->has('term_id') && $request->term_id !== '') {
+            $query->whereHas('courseClasses', function($q) use ($request) {
+                $q->where('term_id', $request->term_id);
+            });
+        }
+        
+        $courses = $query->paginate(10)->withQueryString();
+        $terms = Term::orderBy('academic_year', 'desc')->orderBy('name')->get();
+        
+        return view('admin.courses.index', compact('courses', 'terms'));
     }
 
     /**

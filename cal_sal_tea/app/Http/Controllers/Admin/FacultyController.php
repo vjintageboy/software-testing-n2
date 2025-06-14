@@ -13,7 +13,17 @@ class FacultyController extends Controller
      */
     public function index()
     {
-        $faculties = Faculty::latest()->paginate(10);
+        $query = Faculty::query();
+
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('abbreviation', 'like', "%{$search}%");
+            });
+        }
+
+        $faculties = $query->latest()->paginate(10);
         return view('admin.faculties.index', compact('faculties'));
     }
 

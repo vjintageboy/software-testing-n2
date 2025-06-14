@@ -17,12 +17,33 @@ class CourseClassController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $classes = CourseClass::with(['course', 'term'])->latest()->paginate(10);
-        return view('admin.course_classes.index', compact('classes'));
+        $query = CourseClass::with(['course', 'term', 'assignment.teacher']);
 
-        
+        // Thêm điều kiện tìm kiếm nếu có
+        if ($request->has('search') && $request->search !== '') {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('class_code', 'like', '%' . $searchTerm . '%')
+                  ->orWhereHas('course', function ($qCourse) use ($searchTerm) {
+                      $qCourse->where('name', 'like', '%' . $searchTerm . '%');
+                  })
+                  ->orWhereHas('assignment.teacher', function ($qTeacher) use ($searchTerm) {
+                      $qTeacher->where('full_name', 'like', '%' . $searchTerm . '%');
+                  });
+            });
+        }
+
+        // Thêm điều kiện lọc theo kỳ học
+        if ($request->has('term_id') && $request->term_id !== '') {
+            $query->where('term_id', $request->term_id);
+        }
+
+        $classes = $query->latest()->paginate(15)->appends($request->query());
+        $terms = Term::orderBy('academic_year', 'desc')->orderBy('name')->get();
+
+        return view('admin.course_classes.index', compact('classes', 'terms'));
     }
 
     /**
@@ -147,5 +168,30 @@ class CourseClassController extends Controller
 
         return redirect()->route('classes.index')
                          ->with('success', "Đã tạo thành công {$numberOfClasses} lớp học phần cho môn {$course->name}.");
+    }
+
+    /**
+     * Remove multiple course classes from storage.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'selected_classes' => 'required|array',
+            'selected_classes.*' => 'exists:course_classes,id'
+        ]);
+
+        $selectedClasses = CourseClass::whereIn('id', $request->selected_classes);
+        
+        // Check if any of the selected classes have assignments
+        $classesWithAssignments = $selectedClasses->whereHas('assignments')->count();
+        if ($classesWithAssignments > 0) {
+            return redirect()->route('classes.index')
+                ->with('error', 'Không thể xóa các lớp đã được phân công giảng dạy.');
+        }
+
+        $deletedCount = $selectedClasses->delete();
+
+        return redirect()->route('classes.index')
+            ->with('success', "Đã xóa thành công {$deletedCount} lớp học phần.");
     }
 }

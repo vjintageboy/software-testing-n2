@@ -11,6 +11,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
+                    {{-- Thông báo thành công / lỗi --}}
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
@@ -18,7 +19,7 @@
                             {{ session('success') }}
                         </div>
                     @endif
-                     @if(session('error'))
+                    @if(session('error'))
                         <div class="alert alert-danger alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
                             <h5><i class="icon fas fa-ban"></i> Lỗi!</h5>
@@ -26,16 +27,39 @@
                         </div>
                     @endif
                     
-                    <a href="{{ route('degrees.create') }}" class="btn btn-primary mb-2">
-                        <i class="fa fa-plus"></i> Tạo Bằng cấp mới
-                    </a>
+                    {{-- Thanh tìm kiếm + nút tạo mới --}}
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-8">
+                            <form action="{{ route('degrees.index') }}" method="GET">
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control" placeholder="Tìm kiếm theo tên bằng cấp..." value="{{ request('search') }}">
+                                    <div class="input-group-append">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search"></i> Tìm kiếm
+                                        </button>
+                                        @if(request('search'))
+                                            <a href="{{ route('degrees.index') }}" class="btn btn-secondary">
+                                                <i class="fas fa-times"></i> Xóa
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-4 text-md-right mt-2 mt-md-0">
+                            <a href="{{ route('degrees.create') }}" class="btn btn-success">
+                                <i class="fa fa-plus"></i> Tạo Bằng cấp mới
+                            </a>
+                        </div>
+                    </div>
 
+                    {{-- Bảng dữ liệu --}}
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th style="width: 50px;">ID</th>
                                 <th>Tên Bằng cấp</th>
-                                <th>Tên viết tắt</th> {{-- Thêm cột mới --}}
+                                <th>Tên viết tắt</th>
                                 <th>Hệ số</th>
                                 <th style="width: 150px;">Hành động</th>
                             </tr>
@@ -45,7 +69,7 @@
                                 <tr>
                                     <td>{{ $degree->id }}</td>
                                     <td>{{ $degree->name }}</td>
-                                    <td>{{ $degree->abbreviation }}</td> {{-- Hiển thị dữ liệu mới --}}
+                                    <td>{{ $degree->abbreviation }}</td>
                                     <td>{{ $degree->coefficient }}</td>
                                     <td>
                                         <a href="{{ route('degrees.edit', $degree) }}" class="btn btn-sm btn-info">
@@ -68,6 +92,7 @@
                         </tbody>
                     </table>
 
+                    {{-- Phân trang --}}
                     <div class="mt-3 d-flex justify-content-end">
                         {{ $degrees->links() }}
                     </div>

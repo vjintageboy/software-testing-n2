@@ -13,9 +13,19 @@ class TeacherController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $teachers = Teacher::with(['faculty', 'degree'])->latest()->paginate(10);
+        $query = Teacher::with(['faculty', 'degree']);
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('teacher_code', 'like', "%{$search}%");
+            });
+        }
+
+        $teachers = $query->latest()->paginate(10);
         return view('admin.teachers.index', compact('teachers'));
     }
 

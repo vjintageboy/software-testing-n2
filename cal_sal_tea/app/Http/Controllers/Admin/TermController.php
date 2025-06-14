@@ -13,7 +13,17 @@ class TermController extends Controller
      */
     public function index()
     {
-        $terms = Term::latest()->paginate(10);
+        $query = Term::query();
+
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('academic_year', 'like', "%{$search}%");
+            });
+        }
+
+        $terms = $query->latest()->paginate(10);
         return view('admin.terms.index', compact('terms'));
     }
 
