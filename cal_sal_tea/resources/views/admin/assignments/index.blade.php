@@ -49,7 +49,7 @@
                                 <th style="width: 50px;">ID</th>
                                 <th>Giảng viên</th>
                                 <th>Lớp học phần</th>
-                                <th style="width: 80px;">Hành động</th>
+                                <th style="width: 150px;">Hành động</th>
                             </tr>
                         </thead>
                         <tbody>
