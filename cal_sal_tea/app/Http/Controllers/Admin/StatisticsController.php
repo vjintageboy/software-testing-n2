@@ -29,24 +29,12 @@ class StatisticsController extends Controller
             'totalDegrees' => Degree::count(),
         ];
 
-        // Thống kê số lượng giáo viên theo khoa
-        $teachersPerFaculty = Faculty::withCount('teachers')->orderBy('teachers_count', 'desc')->get();
-        $facultyChartData = [
-            'labels' => $teachersPerFaculty->pluck('name'),
-            'data' => $teachersPerFaculty->pluck('teachers_count'),
-        ];
-
-        // Thống kê số lượng giáo viên theo học vị
-        $teachersPerDegree = Degree::withCount('teachers')->orderBy('teachers_count', 'desc')->get();
-        $degreeChartData = [
-            'labels' => $teachersPerDegree->pluck('abbreviation'),
-            'data' => $teachersPerDegree->pluck('teachers_count'),
-        ];
-
         // 2. Dữ liệu thống kê phụ thuộc vào học kỳ được chọn
         $terms = Term::orderBy('start_date', 'desc')->get();
         $selectedTermId = $request->input('term_id', Term::getActiveTerm()->id ?? ($terms->first()?->id));
         $selectedTerm = Term::find($selectedTermId);
+        $facultyChartData = ['labels' => [], 'data' => []];
+        $degreeChartData = ['labels' => [], 'data' => []];
 
         $teacherWorkload = collect();
 
@@ -54,6 +42,34 @@ class StatisticsController extends Controller
             $assignments = Assignment::with(['teacher.faculty', 'teacher.degree', 'courseClass.course'])
                 ->whereHas('courseClass', fn ($q) => $q->where('term_id', $selectedTerm->id))
                 ->get();
+
+            // Thống kê số lượng giáo viên theo khoa (THEO KỲ)
+            // Chỉ đếm giáo viên có phân công trong kỳ này
+            $teachersPerFaculty = Faculty::withCount(['teachers' => function ($query) use ($selectedTerm) {
+                $query->whereHas('assignments', function ($assignmentQuery) use ($selectedTerm) {
+                    $assignmentQuery->whereHas('courseClass', function ($courseClassQuery) use ($selectedTerm) {
+                        $courseClassQuery->where('term_id', $selectedTerm->id);
+                    });
+                });
+            }])->orderBy('teachers_count', 'desc')->get();
+            $facultyChartData = [
+                'labels' => $teachersPerFaculty->pluck('name'),
+                'data' => $teachersPerFaculty->pluck('teachers_count'),
+            ];
+
+            // Thống kê số lượng giáo viên theo học vị (THEO KỲ)
+            // Chỉ đếm giáo viên có phân công trong kỳ này
+            $teachersPerDegree = Degree::withCount(['teachers' => function ($query) use ($selectedTerm) {
+                $query->whereHas('assignments', function ($assignmentQuery) use ($selectedTerm) {
+                    $assignmentQuery->whereHas('courseClass', function ($courseClassQuery) use ($selectedTerm) {
+                        $courseClassQuery->where('term_id', $selectedTerm->id);
+                    });
+                });
+            }])->orderBy('teachers_count', 'desc')->get();
+            $degreeChartData = [
+                'labels' => $teachersPerDegree->pluck('abbreviation'),
+                'data' => $teachersPerDegree->pluck('teachers_count'),
+            ];
 
             $assignmentsByTeacher = $assignments->groupBy('teacher_id');
 
