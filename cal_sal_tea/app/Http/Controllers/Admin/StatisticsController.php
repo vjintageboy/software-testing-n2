@@ -15,6 +15,8 @@ use App\Models\Course;
 use App\Models\CourseClass;
 use Illuminate\Support\Facades\DB;
 use App\Models\Payroll;
+use App\Models\PayrollParameter;
+use PDF;
 
 class StatisticsController extends Controller
 {
@@ -360,50 +362,143 @@ class StatisticsController extends Controller
     }
 
     /**
-     * UC4.1: Báo cáo tiền dạy của giáo viên trong một năm
+     * Helper function to get class size coefficient.
      */
-    public function teacherSalaryReport(Request $request)
+    private function getClassSizeCoefficient($numberOfStudents, $coefficients)
     {
-        $teachers = Teacher::orderBy('full_name')->get();
-        $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
-                     ->orderBy('year', 'desc')
-                     ->pluck('year');
-
-        $selectedTeacherId = $request->input('teacher_id');
-        $selectedYear = $request->input('year');
-        $payrolls = null;
-        $totalSalary = 0;
-
-        if ($request->isMethod('post') && $selectedTeacherId && $selectedYear) {
-            $payrolls = Payroll::with('term')
-                ->where('teacher_id', $selectedTeacherId)
-                ->whereHas('term', function ($query) use ($selectedYear) {
-                    $query->whereYear('start_date', $selectedYear);
-                })
-                ->get();
-            $totalSalary = $payrolls->sum('total_amount');
+        foreach ($coefficients as $coeff) {
+            if ($numberOfStudents >= $coeff->min_students && $numberOfStudents <= $coeff->max_students) {
+                return $coeff->coefficient;
+            }
         }
-
-        return view('admin.reports.teacher_salary', compact('teachers', 'years', 'selectedTeacherId', 'selectedYear', 'payrolls', 'totalSalary'));
+        return 1.0; // Default coefficient
     }
 
     /**
-     * UC4.2: Báo cáo tiền dạy của giáo viên một khoa
+     * Phương thức phụ trợ mới: Lấy hệ số sĩ số đang có hiệu lực tại một ngày cụ thể.
+     *
+     * @param \Illuminate\Support\Collection $coefficients Collection chứa tất cả các hệ số.
+     * @param int $numberOfStudents Sĩ số lớp.
+     * @param string $date Ngày cần kiểm tra (định dạng 'Y-m-d').
+     * @return float
      */
-    public function facultySalaryReport(Request $request)
+    private function getActiveClassSizeCoefficient($coefficients, $numberOfStudents, $date)
     {
-        $faculties = Faculty::orderBy('name')->get();
-        $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
-                     ->orderBy('year', 'desc')
-                     ->pluck('year');
+        $applicableCoefficients = $coefficients->filter(function ($coeff) use ($date) {
+            $isValidFrom = $coeff->valid_from ? $date >= $coeff->valid_from : true;
+            $isValidTo = $coeff->valid_to ? $date <= $coeff->valid_to : true;
+            return $isValidFrom && $isValidTo;
+        });
 
-        $selectedFacultyId = $request->input('faculty_id');
+        foreach ($applicableCoefficients as $coeff) {
+            if ($numberOfStudents >= $coeff->min_students && $numberOfStudents <= $coeff->max_students) {
+                return $coeff->coefficient;
+            }
+        }
+
+        return 1.0; // Hệ số mặc định nếu không tìm thấy
+    }
+
+    /**
+     * Phương thức getTeacherReportData đã được cập nhật logic
+     */
+    private function getTeacherReportData($teacherId, $year)
+    {
+        $selectedTeacher = Teacher::with('degree', 'faculty')->findOrFail($teacherId);
+        $payrollParameters = PayrollParameter::first();
+        $allClassSizeCoefficients = ClassSizeCoefficient::all();
+
+        // Sửa câu truy vấn để dùng quan hệ lồng nhau
+        $assignments = Assignment::where('teacher_id', $teacherId)
+            ->whereHas('courseClass.term', function ($query) use ($year) {
+                $query->whereYear('start_date', $year);
+            })
+            ->with(['courseClass.term', 'courseClass.course'])
+            ->get();
+
+        // Gom nhóm và tính toán dữ liệu
+        $reportDetails = $assignments->groupBy('courseClass.term.name')->map(function ($termAssignments) use ($payrollParameters, $allClassSizeCoefficients, $selectedTeacher) {
+            $termTotal = 0;
+            $details = $termAssignments->map(function ($assignment) use ($payrollParameters, $allClassSizeCoefficients, $selectedTeacher, &$termTotal) {
+                $course = $assignment->courseClass->course;
+                $courseClass = $assignment->courseClass;
+                
+                // Truy cập term thông qua courseClass
+                $termStartDate = $assignment->courseClass->term->start_date;
+
+                // Get base pay parameter for the term
+                $basePayParam = PayrollParameter::where('valid_from', '<=', $termStartDate)
+                    ->where(function ($query) use ($termStartDate) {
+                        $query->where('valid_to', '>=', $termStartDate)
+                              ->orWhereNull('valid_to');
+                    })
+                    ->first();
+
+                if ($basePayParam) {
+                    $basePayPerPeriod = $basePayParam->base_pay_per_period;
+                    $teacherCoefficient = $selectedTeacher->degree->coefficient;
+                    $courseCoefficient = $course->coefficient;
+                    $standardPeriods = $course->standard_periods;
+
+                    $classSizeCoeff = $this->getActiveClassSizeCoefficient(
+                        $allClassSizeCoefficients,
+                        $courseClass->number_of_students,
+                        $termStartDate
+                    );
+
+                    // Calculate using the correct formula from PayrollController
+                    $convertedPeriods = $standardPeriods * ($courseCoefficient + $classSizeCoeff);
+                    $classAmount = $convertedPeriods * $teacherCoefficient * $basePayPerPeriod;
+                    $termTotal += $classAmount;
+
+                    return [
+                        'course_name' => $course->name,
+                        'class_code' => $courseClass->class_code,
+                        'number_of_students' => $courseClass->number_of_students,
+                        'standard_periods' => $standardPeriods,
+                        'base_pay_per_period' => $basePayPerPeriod,
+                        'degree_coefficient' => $teacherCoefficient,
+                        'course_coefficient' => $courseCoefficient,
+                        'class_size_coefficient' => $classSizeCoeff,
+                        'converted_periods' => $convertedPeriods,
+                        'class_amount' => $classAmount,
+                    ];
+                }
+
+                // Return null if no base pay parameter found
+                return null;
+            })->filter(function ($detail) {
+                return $detail !== null;
+            });
+
+            return [
+                'term_name' => $termAssignments->first()->courseClass->term->name,
+                'details' => $details,
+                'term_total' => $termTotal,
+            ];
+        });
+
+        $totalYearlySalary = $reportDetails->sum('term_total');
+
+        return compact('selectedTeacher', 'year', 'reportDetails', 'totalYearlySalary', 'payrollParameters');
+    }
+
+    /**
+     * UC4.1: Display teacher salary report page
+     */
+    public function teacherSalaryReport(Request $request)
+    {
+        $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
         $selectedYear = $request->input('year');
         $reportData = null;
-        $totalFacultySalary = 0;
+        $totalYearlySalary = 0;
+        $faculties = Faculty::orderBy('name')->get();
 
-        if ($request->isMethod('post') && $selectedFacultyId && $selectedYear) {
-            $reportData = Teacher::where('faculty_id', $selectedFacultyId)
+        if ($request->isMethod('post') && $selectedYear) {
+            $reportData = Teacher::with(['faculty', 'degree'])
                 ->with(['payrolls' => function ($query) use ($selectedYear) {
                     $query->whereHas('term', function ($subQuery) use ($selectedYear) {
                         $subQuery->whereYear('start_date', $selectedYear);
@@ -416,18 +511,57 @@ class StatisticsController extends Controller
                 })
                 ->filter(function ($teacher) {
                     return $teacher->total_amount > 0;
-                });
+                })
+                ->sortByDesc('total_amount');
 
-            $totalFacultySalary = $reportData->sum('total_amount');
+            $totalYearlySalary = $reportData->sum('total_amount');
         }
 
-        return view('admin.reports.faculty_salary', compact('faculties', 'years', 'selectedFacultyId', 'selectedYear', 'reportData', 'totalFacultySalary'));
+        return view('admin.reports.teacher_salary', compact('years', 'selectedYear', 'reportData', 'totalYearlySalary', 'faculties'));
     }
 
     /**
-     * UC4.3: Báo cáo tiền dạy của giáo viên toàn trường
+     * Display detailed teacher salary report
      */
-    public function schoolSalaryReport(Request $request)
+    public function teacherSalaryDetail($teacher_id, Request $request)
+    {
+        $year = $request->input('year');
+        if (!$year) {
+            return redirect()->route('admin.reports.teacher_salary')
+                ->with('error', 'Vui lòng chọn năm.');
+        }
+
+        $data = $this->getTeacherReportData($teacher_id, $year);
+        return view('admin.reports.teacher_salary_detail', $data);
+    }
+
+    /**
+     * Export teacher salary report to PDF
+     */
+    public function exportTeacherSalaryPDF(Request $request)
+    {
+        $request->validate([
+            'teacher_id' => 'required|exists:teachers,id',
+            'year' => 'required|numeric'
+        ]);
+
+        $data = $this->getTeacherReportData($request->teacher_id, $request->year);
+
+        if (!$data['reportDetails'] || $data['reportDetails']->isEmpty()) {
+            return redirect()->back()->with('error', 'Không có dữ liệu để xuất hóa đơn.');
+        }
+
+        $filename = 'bang-ke-luong-' . \Illuminate\Support\Str::slug($data['selectedTeacher']->full_name) . '-' . $data['year'] . '.pdf';
+
+        $pdf = PDF::loadView('admin.reports.teacher_salary_pdf', $data);
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * UC4.2: Báo cáo tiền dạy của giáo viên theo khoa
+     */
+    public function facultySalaryReport(Request $request)
     {
         $years = Term::select(DB::raw('DISTINCT YEAR(start_date) as year'))
             ->orderBy('year', 'desc')
@@ -435,28 +569,141 @@ class StatisticsController extends Controller
 
         $selectedYear = $request->input('year');
         $reportData = null;
-        $totalSchoolSalary = 0;
+        $totalSalary = 0;
+        $averageSalary = 0;
+        $chartLabels = collect();
+        $chartData = collect();
+        $top5Labels = collect();
+        $top5Data = collect();
 
         if ($request->isMethod('post') && $selectedYear) {
-            $reportData = Faculty::with(['teachers.payrolls' => function ($query) use ($selectedYear) {
+            $reportData = Faculty::withCount(['teachers' => function ($query) use ($selectedYear) {
+                    $query->whereHas('payrolls.term', function ($subQuery) use ($selectedYear) {
+                        $subQuery->whereYear('start_date', $selectedYear);
+                    });
+                }])
+                ->with(['teachers.payrolls' => function ($query) use ($selectedYear) {
                     $query->whereHas('term', function ($subQuery) use ($selectedYear) {
                         $subQuery->whereYear('start_date', $selectedYear);
                     });
                 }])
                 ->get()
                 ->map(function ($faculty) {
-                    $faculty->total_amount = $faculty->teachers->reduce(function ($carry, $teacher) {
+                    $faculty->total_salary = $faculty->teachers->reduce(function ($carry, $teacher) {
                         return $carry + $teacher->payrolls->sum('total_amount');
                     }, 0);
+                    $faculty->average_salary = $faculty->teachers_count > 0 ? 
+                        $faculty->total_salary / $faculty->teachers_count : 0;
                     return $faculty;
                 })
                 ->filter(function ($faculty) {
-                    return $faculty->total_amount > 0;
-                });
+                    return $faculty->total_salary > 0;
+                })
+                ->sortByDesc('total_salary');
 
-            $totalSchoolSalary = $reportData->sum('total_amount');
+            $totalSalary = $reportData->sum('total_salary');
+            $averageSalary = $reportData->avg('average_salary');
+
+            // Chuẩn bị dữ liệu cho biểu đồ tròn
+            $chartLabels = $reportData->pluck('name');
+            $chartData = $reportData->pluck('total_salary');
+
+            // Chuẩn bị dữ liệu cho biểu đồ top 5
+            $top5Labels = $reportData->take(5)->pluck('name');
+            $top5Data = $reportData->take(5)->pluck('total_salary');
         }
 
-        return view('admin.reports.school_salary', compact('years', 'selectedYear', 'reportData', 'totalSchoolSalary'));
+        return view('admin.reports.faculty_salary', compact(
+            'years', 
+            'selectedYear', 
+            'reportData', 
+            'totalSalary',
+            'averageSalary',
+            'chartLabels', 
+            'chartData',
+            'top5Labels',
+            'top5Data'
+        ));
     }
+
+    /**
+     * Hiển thị chi tiết lương của một khoa
+     */
+    public function facultySalaryDetail(Request $request, Faculty $faculty)
+    {
+        $selectedYear = $request->input('year');
+        if (!$selectedYear) {
+            return redirect()->route('admin.reports.faculty_salary')
+                ->with('error', 'Vui lòng chọn năm để xem chi tiết.');
+        }
+
+        // Lấy danh sách giáo viên của khoa có lương trong năm
+        $teachers = $faculty->teachers()
+            ->whereHas('payrolls.term', function ($query) use ($selectedYear) {
+                $query->whereYear('start_date', $selectedYear);
+            })
+            ->with(['payrolls' => function ($query) use ($selectedYear) {
+                $query->whereHas('term', function ($subQuery) use ($selectedYear) {
+                    $subQuery->whereYear('start_date', $selectedYear);
+                });
+            }])
+            ->get()
+            ->map(function ($teacher) {
+                $teacher->total_salary = $teacher->payrolls->sum('total_amount');
+                return $teacher;
+            })
+            ->sortByDesc('total_salary');
+
+        // Tính toán các thống kê
+        $totalSalary = $teachers->sum('total_salary');
+        $averageSalary = $teachers->avg('total_salary');
+        $teachersCount = $teachers->count();
+        $highestSalary = $teachers->max('total_salary');
+
+        // Chuẩn bị dữ liệu cho biểu đồ phân bố lương
+        $salaryRanges = [
+            '0-5M' => 5000000,
+            '5M-10M' => 10000000,
+            '10M-15M' => 15000000,
+            '15M-20M' => 20000000,
+            '20M+' => PHP_FLOAT_MAX
+        ];
+
+        $distributionData = collect();
+        $distributionLabels = collect();
+
+        foreach ($salaryRanges as $label => $maxValue) {
+            $count = $teachers->filter(function ($teacher) use ($maxValue, $label, $salaryRanges) {
+                if ($label === '0-5M') {
+                    return $teacher->total_salary <= $maxValue;
+                } elseif ($label === '20M+') {
+                    return $teacher->total_salary > 20000000;
+                } else {
+                    $keys = array_keys($salaryRanges);
+                    $currentIndex = array_search($label, $keys);
+                    $prevMax = $salaryRanges[$keys[$currentIndex - 1]];
+                    return $teacher->total_salary > $prevMax && $teacher->total_salary <= $maxValue;
+                }
+            })->count();
+
+            $distributionLabels->push($label);
+            $distributionData->push($count);
+        }
+
+        return view('admin.reports.faculty_salary_detail', compact(
+            'faculty',
+            'selectedYear',
+            'teachers',
+            'totalSalary',
+            'averageSalary',
+            'teachersCount',
+            'highestSalary',
+            'distributionLabels',
+            'distributionData'
+        ));
+    }
+
+    /**
+     * UC4.3: Báo cáo tiền dạy của giáo viên toàn trường gộp vào khoa
+     */
 }

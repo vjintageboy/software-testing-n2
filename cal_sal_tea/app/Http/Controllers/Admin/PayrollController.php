@@ -58,21 +58,15 @@ class PayrollController extends Controller
     public function store(Request $request)
     {
         try {
-            \Log::info('Starting payroll calculation', [
-                'request' => $request->all()
-            ]);
+            \Log::info('Starting payroll calculation', ['request' => $request->all()]);
 
-            $request->validate([
-                'term_id' => 'required|exists:terms,id'
-            ]);
+            $request->validate(['term_id' => 'required|exists:terms,id']);
 
             $term = Term::findOrFail($request->term_id);
             \Log::info('Found term', ['term' => $term->toArray()]);
 
-            // Lấy ngày bắt đầu của học kỳ để làm ngày tham chiếu cho tất cả các truy vấn
             $referenceDate = $term->start_date;
 
-            // Lấy tất cả các phân công trong kì học này
             $assignments = Assignment::whereHas('courseClass', function($query) use ($term) {
                 $query->where('term_id', $term->id);
             })->with(['teacher.degree', 'courseClass.course'])->get();
@@ -81,13 +75,8 @@ class PayrollController extends Controller
                 \Log::warning('No assignments found for term', ['term_id' => $term->id]);
                 return redirect()->back()->with('error', 'Kì học này không có phân công nào để tính lương.');
             }
+            \Log::info('Found assignments', ['count' => $assignments->count()]);
 
-            \Log::info('Found assignments', [
-                'count' => $assignments->count(),
-                'assignments' => $assignments->toArray()
-            ]);
-
-            // Lấy đơn giá tiết dạy
             $basePayParam = PayrollParameter::where('valid_from', '<=', $referenceDate)
                 ->where(function ($query) use ($referenceDate) {
                     $query->where('valid_to', '>=', $referenceDate)
@@ -96,62 +85,48 @@ class PayrollController extends Controller
                 ->first();
 
             if (!$basePayParam) {
-                \Log::warning('No base pay parameter found', [
-                    'reference_date' => $referenceDate
-                ]);
+                \Log::warning('No base pay parameter found', ['reference_date' => $referenceDate]);
                 return redirect()->back()->with('error', 'Chưa có đơn giá nào được áp dụng cho kì học này. Vui lòng thêm trong mục "Đơn giá Tiết dạy".');
             }
-
             \Log::info('Found base pay parameter', ['base_pay_param' => $basePayParam->toArray()]);
-
             $basePayPerPeriod = $basePayParam->base_pay_per_period;
 
-            // Lấy hệ số quy mô lớp học
-            $classSizeCoefficient = ClassSizeCoefficient::where('valid_from', '<=', $referenceDate)
+            // 1. Lấy TẤT CẢ các quy tắc hợp lệ bằng ->get() và đổi tên biến cho rõ nghĩa
+            $classSizeRules = ClassSizeCoefficient::where('valid_from', '<=', $referenceDate)
                 ->where(function ($query) use ($referenceDate) {
                     $query->where('valid_to', '>=', $referenceDate)
                           ->orWhereNull('valid_to');
                 })
-                ->first();
+                ->get();
 
-            if (!$classSizeCoefficient) {
-                \Log::warning('No class size coefficient found', [
-                    'reference_date' => $referenceDate
-                ]);
+            if ($classSizeRules->isEmpty()) {
+                \Log::warning('No class size coefficient rules found', ['reference_date' => $referenceDate]);
                 return redirect()->back()->with('error', 'Chưa có hệ số quy mô lớp học nào được áp dụng cho kì học này. Vui lòng thêm trong mục "Hệ số Quy mô Lớp học".');
             }
+            \Log::info('Found class size rules', ['count' => $classSizeRules->count()]);
 
-            \Log::info('Found class size coefficient', ['class_size_coefficient' => $classSizeCoefficient->toArray()]);
-
-            DB::transaction(function () use ($assignments, $term, $basePayPerPeriod, $classSizeCoefficient, $referenceDate) {
-                // Xóa các bảng lương cũ của kì này để tính lại
+            // 2. Truyền đúng biến $classSizeRules vào transaction
+            DB::transaction(function () use ($assignments, $term, $basePayPerPeriod, $classSizeRules) {
                 Payroll::where('term_id', $term->id)->delete();
 
                 foreach ($assignments as $assignment) {
-                    // Lấy các giá trị cần thiết
-                    $teacherCoefficient = $assignment->teacher->degree->coefficient; // hệ_số_giáo_viên
-                    $standardPeriods = $assignment->courseClass->course->standard_periods; // Số tiết thực tế
-                    $courseCoefficient = $assignment->courseClass->course->coefficient; // hệ_số_học_phần
-                    
-                    // Tính hệ số sĩ số
+                    $teacherCoefficient = $assignment->teacher->degree->coefficient;
+                    $standardPeriods = $assignment->courseClass->course->standard_periods;
+                    $courseCoefficient = $assignment->courseClass->course->coefficient;
                     $studentCount = $assignment->courseClass->number_of_students;
-                    $classCoefficient = 0.0;
-                    
-                    if ($studentCount <= $classSizeCoefficient->min_students) {
-                        $classCoefficient = $classSizeCoefficient->coefficient;
-                    } elseif ($studentCount <= $classSizeCoefficient->max_students) {
-                        $classCoefficient = $classSizeCoefficient->coefficient * 2;
-                    } else {
-                        $classCoefficient = $classSizeCoefficient->coefficient * 3;
+
+                    // 3. Sửa vòng lặp để duyệt qua danh sách $classSizeRules
+                    $classCoefficient = 0.0; // Mặc định là 0
+                    foreach ($classSizeRules as $rule) {
+                        if ($studentCount >= $rule->min_students && $studentCount <= $rule->max_students) {
+                            $classCoefficient = $rule->coefficient;
+                            break;
+                        }
                     }
 
-                    // Tính số tiết quy đổi
                     $convertedPeriods = $standardPeriods * ($courseCoefficient + $classCoefficient);
-
-                    // Tính thành tiền cuối cùng
                     $totalAmount = $convertedPeriods * $teacherCoefficient * $basePayPerPeriod;
 
-                    // Tạo bản ghi payroll với snapshot
                     Payroll::create([
                         'teacher_id' => $assignment->teacher_id,
                         'term_id' => $term->id,
@@ -168,6 +143,8 @@ class PayrollController extends Controller
                 }
             });
 
+            // === SỬA LỖI ROUTE NAME ===
+            // Đổi tên route về lại 'payrolls.index' để khớp với cấu hình dự án của bạn
             return redirect()->route('payrolls.index')
                 ->with('success', 'Đã tính toán và lưu bảng lương cho ' . $term->name . ' - ' . $term->academic_year . ' thành công!');
         } catch (\Exception $e) {
@@ -202,7 +179,7 @@ class PayrollController extends Controller
     {
         Payroll::where('term_id', $term_id)->delete();
 
-        return redirect()->route('admin.payrolls.index')
+        return redirect()->route('payrolls.index')
                          ->with('success', 'Đã xóa toàn bộ bảng lương của kì học đã chọn.');
     }
 }

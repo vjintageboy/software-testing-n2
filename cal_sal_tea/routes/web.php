@@ -78,8 +78,15 @@ Route::middleware(['auth'])->group(function () {
         // === ROUTE BÁO CÁO LƯƠNG ===
         Route::prefix('reports')->name('admin.reports.')->group(function () {
             Route::match(['get', 'post'], 'teacher-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherSalaryReport'])->name('teacher_salary');
+            Route::get('teacher-salary/{teacher_id}', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherSalaryDetail'])->name('teacher_salary_detail');
+            Route::get('teacher-salary/pdf', [\App\Http\Controllers\Admin\StatisticsController::class, 'exportTeacherSalaryPDF'])->name('teacher_salary.pdf');
             Route::match(['get', 'post'], 'faculty-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'facultySalaryReport'])->name('faculty_salary');
-            Route::match(['get', 'post'], 'school-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'schoolSalaryReport'])->name('school_salary');
+            Route::get('faculty-salary/{faculty}', [\App\Http\Controllers\Admin\StatisticsController::class, 'facultySalaryDetail'])->name('faculty_salary_detail');
         });
     });
 });
+Route::prefix('admin')->middleware(['auth', 'verified'])->name('admin.')->group(function () {
+    Route::get('reports/teacher-salary', [\App\Http\Controllers\Admin\StatisticsController::class, 'teacherSalaryReport'])->name('reports.teacher_salary');
+    Route::get('reports/teacher-salary/pdf', [\App\Http\Controllers\Admin\StatisticsController::class, 'exportTeacherSalaryPDF'])->name('reports.teacher_salary.pdf');
+});
+

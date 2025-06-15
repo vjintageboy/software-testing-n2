@@ -12,11 +12,10 @@ class Assignment extends Model
     protected $fillable = [
         'teacher_id',
         'course_class_id',
-        'notes',
     ];
 
     /**
-     * Get the teacher for this assignment.
+     * Lấy về giáo viên của phân công này.
      */
     public function teacher()
     {
@@ -24,10 +23,10 @@ class Assignment extends Model
     }
 
     /**
-     * Get the class for this assignment.
+     * Lấy về lớp học phần của phân công này.
      */
     public function courseClass()
     {
-        return $this->belongsTo(CourseClass::class, 'course_class_id');
+        return $this->belongsTo(CourseClass::class);
     }
 }

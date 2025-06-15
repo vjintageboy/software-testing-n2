@@ -425,11 +425,6 @@ return [
                 'route'  => 'admin.reports.faculty_salary',
                 'icon' => 'fas fa-fw fa-university',
             ],
-            [
-                'text' => 'Lương toàn trường',
-                'route'  => 'admin.reports.school_salary',
-                'icon' => 'fas fa-fw fa-school',
-            ],
         ],
     ],
 
