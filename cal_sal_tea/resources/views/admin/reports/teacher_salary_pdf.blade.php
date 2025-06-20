@@ -6,7 +6,7 @@
     <title>Bảng kê lương - {{ $selectedTeacher->full_name }} - Năm {{ $year }}</title>
     <style>
         body {
-            font-family: 'dejavu sans', sans-serif; /* Font hỗ trợ tiếng Việt */
+            font-family: 'dejavu sans', sans-serif; 
             font-size: 12px;
             color: #333;
         }
@@ -34,7 +34,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>TRƯỜNG ĐẠI HỌC ABC</h2>
+            <h2>TRƯỜNG ĐẠI HỌC Phenikaa</h2>
             <p><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc</strong></p>
             <hr>
             <h1>BẢNG KÊ THANH TOÁN TIỀN GIẢNG DẠY</h1>
@@ -61,7 +61,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th colspan="7" class="term-name">{{ $termReport['term_name'] }}</th>
+                        <th colspan="9" class="term-name">{{ $termReport['term_name'] }}</th>
                     </tr>
                     <tr>
                         <th>Môn học (Lớp)</th>
@@ -92,7 +92,7 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="6" class="text-right">Tổng cộng học kỳ:</th>
+                        <th colspan="8" class="text-right">Tổng cộng học kỳ:</th>
                         <th class="text-right">{{ number_format($termReport['term_total']) }} VNĐ</th>
                     </tr>
                 </tfoot>

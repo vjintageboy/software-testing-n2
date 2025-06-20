@@ -19,7 +19,8 @@ class Course extends Model
         'name',
         'course_code',
         'credits',
-        'faculty_id', // Thêm faculty_id vào fillable
+        'faculty_id',
+        'standard_periods',
     ];
 
     /**

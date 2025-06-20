@@ -18,6 +18,8 @@
                         fgroup-class="col-md-6" value="{{ old('course_code') }}" required/>
                     <x-adminlte-input type="number" name="credits" label="Số tín chỉ" placeholder="Nhập số tín chỉ"
                         fgroup-class="col-md-6" value="{{ old('credits') }}" min="0" required/>
+                    <x-adminlte-input type="number" name="standard_periods" label="Số tiết tiêu chuẩn" placeholder="Nhập số tiết tiêu chuẩn"
+                        fgroup-class="col-md-6" value="{{ old('standard_periods') }}" min="0" required/>
 
                     {{-- Thêm trường chọn Khoa --}}
                     <x-adminlte-select name="faculty_id" label="Khoa" fgroup-class="col-md-6" required>

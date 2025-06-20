@@ -59,6 +59,7 @@ class CourseController extends Controller
             'course_code' => 'required|string|max:255|unique:courses,course_code',
             'credits' => 'required|integer|min:0',
             'faculty_id' => 'required|exists:faculties,id', // Validate faculty_id
+            'standard_periods' => 'required|integer|min:0',
         ]);
 
         Course::create($request->all());
