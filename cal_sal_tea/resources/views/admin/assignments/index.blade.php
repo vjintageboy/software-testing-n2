@@ -84,53 +84,53 @@
                             <i class="fas fa-trash-alt mr-1"></i> Xóa mục đã chọn
                         </button>
                     </div>
-
-                    {{-- Bảng --}}
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th style="width: 50px;"><input type="checkbox" id="select-all-assignments"></th>
-                                    <th style="width: 50px;">ID</th>
-                                    <th>Giảng viên</th>
-                                    <th>Lớp học phần</th>
-                                    <th style="width: 150px;">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($assignments as $assignment)
-                                    <tr>
-                                        <td>
-                                            <input type="checkbox" name="assignment_ids[]"
-                                                   class="assignment-checkbox" value="{{ $assignment->id }}">
-                                        </td>
-                                        <td>{{ $assignment->id }}</td>
-                                        <td>{{ $assignment->teacher->full_name ?? 'N/A' }}</td>
-                                        <td>{{ $assignment->courseClass->course->name ?? 'N/A' }}
-                                            ({{ $assignment->courseClass->class_code ?? 'N/A' }})
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('assignments.edit', $assignment) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-edit"></i> Sửa
-                                            </a>
-                                            <form action="{{ route('assignments.destroy', $assignment) }}" method="POST" class="d-inline">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                        onclick="return confirm('Bạn có chắc chắn muốn xóa?')">
-                                                    <i class="fas fa-trash"></i> Xóa
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted">Không có dữ liệu phân công.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
                 </form>
+
+                {{-- Bảng --}}
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 50px;"><input type="checkbox" id="select-all-assignments"></th>
+                                <th style="width: 50px;">ID</th>
+                                <th>Giảng viên</th>
+                                <th>Lớp học phần</th>
+                                <th style="width: 150px;">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($assignments as $assignment)
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="assignment_ids[]" form="bulk-delete-form"
+                                               class="assignment-checkbox" value="{{ $assignment->id }}">
+                                    </td>
+                                    <td>{{ $assignment->id }}</td>
+                                    <td>{{ $assignment->teacher->full_name ?? 'N/A' }}</td>
+                                    <td>{{ $assignment->courseClass->course->name ?? 'N/A' }}
+                                        ({{ $assignment->courseClass->class_code ?? 'N/A' }})
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('assignments.edit', $assignment) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <form action="{{ route('assignments.destroy', $assignment) }}" method="POST" class="d-inline">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Bạn có chắc chắn muốn xóa?')">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Không có dữ liệu phân công.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="card-footer d-flex justify-content-end">

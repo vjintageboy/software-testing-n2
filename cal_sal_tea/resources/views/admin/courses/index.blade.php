@@ -68,7 +68,7 @@
                 <table class="table table-bordered">
                     <thead>
                         <tr>
-                            <th style="width: 5%">#</th>
+                            <th style="width: 5%">STT</th>
                             <th>Mã Học phần</th>
                             <th>Tên Học phần</th>
                             <th>Số tín chỉ</th>

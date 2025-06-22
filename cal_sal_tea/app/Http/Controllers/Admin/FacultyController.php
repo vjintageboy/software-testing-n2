@@ -41,9 +41,9 @@ class FacultyController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:faculties,name|regex:/^[\pL\s\d]+$/u',
             'abbreviation' => 'required|string|max:20|unique:faculties',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
         ]);
 
         Faculty::create($request->all());
@@ -66,9 +66,9 @@ class FacultyController extends Controller
     public function update(Request $request, Faculty $faculty)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:faculties,name,' . $faculty->id . '|regex:/^[\pL\s\d]+$/u',
             'abbreviation' => 'required|string|max:20|unique:faculties,abbreviation,' . $faculty->id,
-            'description' => 'nullable|string',
+            'description' => 'required|string',
         ]);
 
         $faculty->update($request->all());

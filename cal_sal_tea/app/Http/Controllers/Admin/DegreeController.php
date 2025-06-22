@@ -38,12 +38,26 @@ class DegreeController extends Controller
      */
     public function store(Request $request)
     {
-        // Thêm validation cho trường abbreviation
-        $request->validate([
-            'name' => 'required|string|max:255|unique:degrees',
-            'abbreviation' => 'required|string|max:20|unique:degrees',
-            'coefficient' => 'required|numeric|min:0',
-        ]);
+        // Cập nhật validation rules và custom messages
+        $request->validate(
+            [
+                'name' => [
+                    'required', 'string', 'max:255', 'unique:degrees',
+                    // Sửa lại: Regex cho phép chữ, số, và ký tự tiếng Việt
+                    'regex:/^[a-zA-Z0-9\s\p{L}]+$/u'
+                ],
+                'abbreviation' => 'required|string|max:20|unique:degrees',
+                'coefficient' => 'required|numeric|min:0',
+            ],
+            [
+                'name.required' => 'Tên đầy đủ không được để trống.',
+                'name.unique' => 'Tên đầy đủ này đã tồn tại.',
+                'name.regex' => 'Tên đầy đủ chỉ được chứa chữ cái, số và khoảng trắng.',
+                'abbreviation.required' => 'Tên viết tắt không được để trống.',
+                'abbreviation.unique' => 'Tên viết tắt này đã tồn tại.',
+                'abbreviation.max' => 'Tên viết tắt không được vượt quá 20 ký tự.',
+            ]
+        );
 
         Degree::create($request->all());
 
@@ -64,12 +78,26 @@ class DegreeController extends Controller
      */
     public function update(Request $request, Degree $degree)
     {
-        // Thêm validation cho trường abbreviation
-        $request->validate([
-            'name' => 'required|string|max:255|unique:degrees,name,' . $degree->id,
-            'abbreviation' => 'required|string|max:20|unique:degrees,abbreviation,' . $degree->id,
-            'coefficient' => 'required|numeric|min:0',
-        ]);
+        // Cập nhật validation rules và custom messages
+        $request->validate(
+            [
+                'name' => [
+                    'required', 'string', 'max:255', 'unique:degrees,name,' . $degree->id,
+                    // Sửa lại: Regex cho phép chữ, số, và ký tự tiếng Việt
+                    'regex:/^[a-zA-Z0-9\s\p{L}]+$/u'
+                ],
+                'abbreviation' => 'required|string|max:20|unique:degrees,abbreviation,' . $degree->id,
+                'coefficient' => 'required|numeric|min:0',
+            ],
+            [
+                'name.required' => 'Tên đầy đủ không được để trống.',
+                'name.unique' => 'Tên đầy đủ này đã tồn tại.',
+                'name.regex' => 'Tên đầy đủ chỉ được chứa chữ cái, số và khoảng trắng.',
+                'abbreviation.required' => 'Tên viết tắt không được để trống.',
+                'abbreviation.unique' => 'Tên viết tắt này đã tồn tại.',
+                'abbreviation.max' => 'Tên viết tắt không được vượt quá 20 ký tự.',
+            ]
+        );
 
         $degree->update($request->all());
 

@@ -45,13 +45,13 @@ class TeacherController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'teacher_code' => 'required|string|max:50|unique:teachers',
-            'full_name' => 'required|string|max:255',
-            'date_of_birth' => 'nullable|date',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255|unique:teachers',
-            'faculty_id' => 'required|exists:faculties,id',
-            'degree_id' => 'required|exists:degrees,id',
+            'teacher_code' => 'required|string|max:50|alpha_dash|unique:teachers,teacher_code',
+            'full_name' => 'required|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'date_of_birth' => 'required|date|before:today|after:1900-01-01',
+            'phone' => ['required_without:email', 'nullable', 'string', 'regex:/^(\+84|0)[0-9]{9,10}$/', 'unique:teachers,phone'],
+            'email' => 'required_without:phone|nullable|email:rfc,dns|max:255|unique:teachers,email',
+            'faculty_id' => 'required|integer|exists:faculties,id',
+            'degree_id' => 'required|integer|exists:degrees,id',
         ]);
 
         Teacher::create($request->all());
@@ -76,14 +76,13 @@ class TeacherController extends Controller
     public function update(Request $request, Teacher $teacher)
     {
         $request->validate([
-            'teacher_code' => 'required|string|max:50|unique:teachers,teacher_code,' . $teacher->id,
-            'full_name' => 'required|string|max:255',
-            'date_of_birth' => 'nullable|date',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255|unique:teachers,email,' . $teacher->id,
-            'faculty_id' => 'required|exists:faculties,id',
-            'degree_id' => 'required|exists:degrees,id',
-            'is_active' => 'sometimes|boolean',
+            'teacher_code' => 'required|string|max:50|alpha_dash|unique:teachers,teacher_code,' . $teacher->id,
+            'full_name' => 'required|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'date_of_birth' => 'required|date|before:today|after:1900-01-01',
+            'phone' => ['required_without:email', 'nullable', 'string', 'regex:/^(\+84|0)[0-9]{9,10}$/', 'unique:teachers,phone,' . $teacher->id],
+            'email' => 'required_without:phone|nullable|email:rfc,dns|max:255|unique:teachers,email,' . $teacher->id,
+            'faculty_id' => 'required|integer|exists:faculties,id',
+            'degree_id' => 'required|integer|exists:degrees,id',
         ]);
 
         $teacher->update($request->all());
