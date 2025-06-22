@@ -15,4 +15,9 @@ class PayrollParameter extends Model
         'valid_from',
         'valid_to',
     ];
+
+    protected $casts = [
+        'valid_from' => 'date',
+        'valid_to' => 'date',
+    ];
 }

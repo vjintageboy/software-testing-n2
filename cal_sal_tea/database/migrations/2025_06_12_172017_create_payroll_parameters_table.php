@@ -14,7 +14,8 @@ return new class extends Migration
     Schema::create('payroll_parameters', function (Blueprint $table) {
         $table->id();
         $table->decimal('base_pay_per_period', 10, 2);
-        $table->date('effective_date');
+        $table->date('valid_from');
+        $table->date('valid_to')->nullable();
         $table->string('description')->nullable();
         $table->timestamps();
     });

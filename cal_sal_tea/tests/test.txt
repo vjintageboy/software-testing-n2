@@ -1,0 +1,2 @@
+./vendor/laravel/dusk/bin/chromedriver --port=9515
+php artisan dusk

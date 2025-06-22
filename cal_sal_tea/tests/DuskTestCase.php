@@ -18,12 +18,22 @@ abstract class DuskTestCase extends BaseTestCase
     public static function prepare(): void
     {
         if (! static::runningInSail()) {
+            // Ép chromedriver dùng cổng cố định 9515 (Laravel Dusk mặc định kết nối cổng này)
             static::startChromeDriver(['--port=9515']);
         }
     }
 
     /**
-     * Create the RemoteWebDriver instance.
+     * Tùy chỉnh URL Laravel app dùng khi chạy test
+     * Tránh lỗi "connection refused" nếu dùng localhost hoặc sai cổng
+     */
+    protected function baseUrl()
+    {
+        return 'http://127.0.0.1:8000';
+    }
+
+    /**
+     * Tạo phiên bản RemoteWebDriver (Chrome headless)
      */
     protected function driver(): RemoteWebDriver
     {
@@ -34,12 +44,12 @@ abstract class DuskTestCase extends BaseTestCase
         ])->unless($this->hasHeadlessDisabled(), function (Collection $items) {
             return $items->merge([
                 '--disable-gpu',
-                '--headless=new',
+                // '--headless=new',
             ]);
         })->all());
 
         return RemoteWebDriver::create(
-            $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL') ?? 'http://localhost:9515',
+            $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL', 'http://localhost:9515'),
             DesiredCapabilities::chrome()->setCapability(
                 ChromeOptions::CAPABILITY, $options
             )
