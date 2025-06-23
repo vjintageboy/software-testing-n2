@@ -94,67 +94,121 @@
                 </div>
 
                 {{-- FORM XÓA NHIỀU --}}
-                <form action="{{ route('classes.bulk_delete') }}" method="POST" id="bulk-delete-form">
-                    @csrf
-                    @method('DELETE')
-
-                    {{-- Nút xóa nhiều --}}
-                    <div class="mb-3">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa các lớp đã chọn?')">
+                <div class="mb-3">
+                    <form action="{{ route('classes.bulk_delete') }}" method="POST" id="bulk-delete-form" style="display:inline-block;">
+                        @csrf
+                        <button type="submit" class="btn btn-danger btn-sm" id="bulk-delete-btn" disabled onclick="return validateBulkDelete()">
                             <i class="fas fa-trash"></i> Xóa các lớp đã chọn
                         </button>
-                    </div>
-
-                    {{-- BẢNG --}}
-                    <div class="table-responsive p-0">
-                        <table class="table table-bordered table-hover text-nowrap">
-                            <thead class="thead-light">
+                        <span id="bulk-checkboxes"></span>
+                    </form>
+                </div>
+                <div class="table-responsive p-0">
+                    <table class="table table-bordered table-hover text-nowrap">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 40px;">Chọn</th>
+                                <th>ID</th>
+                                <th>Mã Lớp</th>
+                                <th>Học phần</th>
+                                <th>Học kỳ</th>
+                                <th>Giảng viên</th>
+                                <th>Sĩ số</th>
+                                <th>Hệ số sĩ số</th>
+                                <th style="width: 180px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($classes as $courseClass)
                                 <tr>
-                                    <th style="width: 40px;"><input type="checkbox" id="check-all"></th>
-                                    <th>ID</th>
-                                    <th>Mã Lớp</th>
-                                    <th>Học phần</th>
-                                    <th>Học kỳ</th>
-                                    <th>Giảng viên</th>
-                                    <th>Sĩ số</th>
-                                    <th>Hệ số sĩ số</th>
-                                    <th style="width: 150px;">Thao tác</th>
+                                    <td>
+                                        <input type="checkbox" class="bulk-checkbox" value="{{ $courseClass->id }}">
+                                    </td>
+                                    <td>{{ $courseClass->id }}</td>
+                                    <td>{{ $courseClass->class_code }}</td>
+                                    <td>{{ $courseClass->course->name ?? '-' }}</td>
+                                    <td>{{ $courseClass->term->name ?? '-' }}</td>
+                                    <td>{{ $courseClass->teacher_name ?? '-' }}</td>
+                                    <td>{{ $courseClass->number_of_students }}</td>
+                                    <td>{{ $courseClass->css_coefficient }}</td>
+                                    <td>
+                                        <a href="{{ route('classes.edit', $courseClass->id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <form action="{{ route('classes.destroy', $courseClass->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp học phần này?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($classes as $courseClass)
-                                    <tr>
-                                        <td><input type="checkbox" name="selected_classes[]" value="{{ $courseClass->id }}"></td>
-                                        <td>{{ $courseClass->id }}</td>
-                                        <td>{{ $courseClass->class_code }}</td>
-                                        <td>{{ $courseClass->course->name ?? '-' }}</td>
-                                        <td>{{ $courseClass->term->name ?? '-' }}</td>
-                                        <td>{{ $courseClass->teacher_name ?? '-' }}</td>
-                                        <td>{{ $courseClass->number_of_students }}</td>
-                                        <td>{{ $courseClass->css_coefficient }}</td>
-                                        <td>
-                                            <a href="{{ route('classes.edit', $courseClass->id) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-edit"></i> Sửa
-                                            </a>
-                                            <form action="{{ route('classes.destroy', $courseClass->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                        onclick="return confirm('Bạn có chắc chắn muốn xóa lớp học phần này?')">
-                                                    <i class="fas fa-trash"></i> Xóa
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="9" class="text-center text-muted">Chưa có lớp học phần nào.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </form>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">Chưa có lớp học phần nào.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <script>
+                    // Khi tích checkbox, thêm input hidden vào form bulk
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const checkboxes = document.querySelectorAll('.bulk-checkbox');
+                        const bulkForm = document.getElementById('bulk-delete-form');
+                        const bulkContainer = document.getElementById('bulk-checkboxes');
+                        const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+                        
+                        // Hàm cập nhật trạng thái nút và input hidden
+                        function updateBulkDeleteState() {
+                            const checkedBoxes = document.querySelectorAll('.bulk-checkbox:checked');
+                            bulkContainer.innerHTML = '';
+                            
+                            if (checkedBoxes.length > 0) {
+                                bulkDeleteBtn.disabled = false;
+                                checkedBoxes.forEach(function(cb) {
+                                    const input = document.createElement('input');
+                                    input.type = 'hidden';
+                                    input.name = 'selected_classes[]';
+                                    input.value = cb.value;
+                                    bulkContainer.appendChild(input);
+                                });
+                            } else {
+                                bulkDeleteBtn.disabled = true;
+                            }
+                        }
+                        
+                        // Thêm event listener cho từng checkbox
+                        checkboxes.forEach(function(checkbox) {
+                            checkbox.addEventListener('change', updateBulkDeleteState);
+                        });
+                        
+                        // Chọn tất cả
+                        const checkAll = document.getElementById('check-all');
+                        if (checkAll) {
+                            checkAll.addEventListener('change', function() {
+                                checkboxes.forEach(function(cb) {
+                                    cb.checked = checkAll.checked;
+                                });
+                                updateBulkDeleteState();
+                            });
+                        }
+                        
+                        // Khởi tạo trạng thái ban đầu
+                        updateBulkDeleteState();
+                    });
+                    
+                    // Hàm validation trước khi submit
+                    function validateBulkDelete() {
+                        const checkedBoxes = document.querySelectorAll('.bulk-checkbox:checked');
+                        if (checkedBoxes.length === 0) {
+                            alert('Vui lòng chọn ít nhất một lớp để xóa.');
+                            return false;
+                        }
+                        return confirm('Bạn có chắc chắn muốn xóa ' + checkedBoxes.length + ' lớp đã chọn?');
+                    }
+                </script>
 
                 {{-- PHÂN TRANG --}}
                 <div class="card-footer d-flex justify-content-end">
@@ -164,15 +218,5 @@
         </div>
     </div>
 </div>
-
-{{-- SCRIPT CHỌN TẤT CẢ --}}
-@push('js')
-<script>
-    document.getElementById('check-all').addEventListener('change', function () {
-        const checkboxes = document.querySelectorAll('input[name="selected_classes[]"]');
-        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-    });
-</script>
-@endpush
 
 @stop

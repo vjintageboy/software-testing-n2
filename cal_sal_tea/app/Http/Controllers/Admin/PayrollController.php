@@ -125,14 +125,14 @@ class PayrollController extends Controller
                     }
 
                     $convertedPeriods = $standardPeriods * ($courseCoefficient + $classCoefficient);
-                    $totalAmount = $convertedPeriods * $teacherCoefficient * $basePayPerPeriod;
+                    $expectedTotalSalary = $convertedPeriods * $teacherCoefficient * $basePayPerPeriod;
 
                     Payroll::create([
                         'teacher_id' => $assignment->teacher_id,
                         'term_id' => $term->id,
                         'assignment_id' => $assignment->id,
                         'calculation_date' => Carbon::now(),
-                        'total_amount' => $totalAmount,
+                        'total_amount' => $expectedTotalSalary,
                         'base_pay_snapshot' => $basePayPerPeriod,
                         'degree_coeff_snapshot' => $teacherCoefficient,
                         'course_coeff_snapshot' => $courseCoefficient,

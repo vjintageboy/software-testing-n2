@@ -77,6 +77,14 @@ class CourseClassController extends Controller
     }
 
     /**
+     * Display the specified resource.
+     */
+    public function show(CourseClass $class)
+    {
+        return redirect()->route('classes.index');
+    }
+
+    /**
      * Show the form for editing the specified resource.
      */
     public function edit(CourseClass $class)
@@ -111,18 +119,24 @@ class CourseClassController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CourseClass $courseClass)
+    public function destroy(CourseClass $class)
     {
+        \Log::info('Bắt đầu xoá lớp học phần', ['id' => $class->id]);
         try {
-            if ($courseClass->assignments()->exists()) {
+            $hasAssignment = $class->assignment()->exists();
+            \Log::info('Kiểm tra assignment', ['id' => $class->id, 'has_assignment' => $hasAssignment]);
+            if ($hasAssignment) {
+                 \Log::warning('Không thể xoá lớp đã phân công', ['id' => $class->id]);
                  return redirect()->route('classes.index')
                              ->with('error', 'Không thể xóa lớp này vì đã được phân công giảng dạy.');
             }
 
-            $courseClass->delete();
+            $deleted = $class->delete();
+            \Log::info('Kết quả xoá lớp học phần', ['id' => $class->id, 'deleted' => $deleted]);
             return redirect()->route('classes.index')
                              ->with('success', 'Đã xóa lớp học phần thành công.');
         } catch (\Exception $e) {
+            \Log::error('Lỗi khi xoá lớp học phần', ['id' => $class->id, 'error' => $e->getMessage()]);
             return redirect()->route('classes.index')
                              ->with('error', 'Không thể xóa lớp học phần này. Vui lòng thử lại.');
         }
@@ -177,23 +191,59 @@ class CourseClassController extends Controller
      */
     public function bulkDelete(Request $request)
     {
+        \Log::info('Bulk delete request received', ['data' => $request->all()]);
+        
         $request->validate([
-            'selected_classes' => 'required|array',
-            'selected_classes.*' => 'exists:course_classes,id'
+            'selected_classes' => 'required|array|min:1',
+            'selected_classes.*' => 'exists:course_classes,id',
+        ], [
+            'selected_classes.required' => 'Vui lòng chọn ít nhất một lớp để xóa.',
+            'selected_classes.min' => 'Vui lòng chọn ít nhất một lớp để xóa.',
+            'selected_classes.*.exists' => 'Một trong các lớp được chọn không hợp lệ.',
         ]);
 
-        $selectedClasses = CourseClass::whereIn('id', $request->selected_classes);
+        $selectedClasses = CourseClass::whereIn('id', $request->selected_classes)->get();
+        \Log::info('Bắt đầu bulk delete', ['ids' => $selectedClasses->pluck('id')->toArray()]);
+
+        if ($selectedClasses->isEmpty()) {
+            \Log::warning('Không có lớp nào được chọn để xóa');
+            return redirect()->route('classes.index')
+                ->with('error', 'Không có lớp nào được chọn để xóa.');
+        }
 
         // Check if any of the selected classes have assignments
-        $classesWithAssignments = $selectedClasses->whereHas('assignments')->count();
+        $classesWithAssignments = $selectedClasses->filter(function ($class) {
+            $hasAssignment = $class->assignment()->exists();
+            \Log::info('Kiểm tra assignment trong bulk', ['id' => $class->id, 'has_assignment' => $hasAssignment]);
+            return $hasAssignment;
+        })->count();
         if ($classesWithAssignments > 0) {
+            \Log::warning('Có lớp đã phân công, không xoá bulk', ['count' => $classesWithAssignments]);
             return redirect()->route('classes.index')
                 ->with('error', 'Không thể xóa các lớp đã được phân công giảng dạy.');
         }
 
-        $deletedCount = $selectedClasses->delete();
-
+        $deletedCount = 0;
+        $failedCount = 0;
+        foreach ($selectedClasses as $class) {
+            try {
+                $deleted = $class->delete();
+                \Log::info('Kết quả xoá lớp trong bulk', ['id' => $class->id, 'deleted' => $deleted]);
+                if ($deleted) {
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            } catch (\Exception $e) {
+                $failedCount++;
+                \Log::error('Lỗi khi xoá lớp trong bulk', ['id' => $class->id, 'error' => $e->getMessage()]);
+            }
+        }
+        $message = "Đã xóa thành công {$deletedCount} lớp học phần.";
+        if ($failedCount > 0) {
+            $message .= " Không thể xóa {$failedCount} lớp do lỗi.";
+        }
         return redirect()->route('classes.index')
-            ->with('success', "Đã xóa thành công {$deletedCount} lớp học phần.");
+            ->with('success', $message);
     }
 }
