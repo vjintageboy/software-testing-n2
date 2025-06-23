@@ -67,7 +67,7 @@ class PayrollController extends Controller
 
             $referenceDate = $term->start_date;
 
-            $assignments = Assignment::whereHas('courseClass', function($query) use ($term) {
+            $assignments = Assignment::whereHas('courseClass', function ($query) use ($term) {
                 $query->where('term_id', $term->id);
             })->with(['teacher.degree', 'courseClass.course'])->get();
 
@@ -166,12 +166,12 @@ class PayrollController extends Controller
                            ->with(['teacher', 'assignment.courseClass.course'])
                            ->latest('total_amount')
                            ->paginate(20);
-        
+
         $totalAmount = Payroll::where('term_id', $term_id)->sum('total_amount');
 
         return view('admin.payrolls.show', compact('payrolls', 'term', 'totalAmount'));
     }
-    
+
     /**
      * Remove the specified resource from storage.
      */

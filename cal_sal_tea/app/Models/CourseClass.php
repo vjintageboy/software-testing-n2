@@ -9,7 +9,7 @@ use App\Models\ClassSizeCoefficient;
 class CourseClass extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'course_classes';
 
     protected $fillable = [
@@ -43,13 +43,13 @@ class CourseClass extends Model
  * @return float|string
  */
     public function getCssCoefficientAttribute()
-{
-    $coefficient = ClassSizeCoefficient::where('min_students', '<=', $this->number_of_students)
+    {
+        $coefficient = ClassSizeCoefficient::where('min_students', '<=', $this->number_of_students)
                                        ->where('max_students', '>=', $this->number_of_students)
                                        ->first();
 
-    return $coefficient ? $coefficient->coefficient : 'Chưa có';
-}
+        return $coefficient ? $coefficient->coefficient : 'Chưa có';
+    }
 /**
      * (HÀM MỚI) Lấy tên giảng viên được phân công cho lớp học.
      * Giúp code trong view gọn hơn.

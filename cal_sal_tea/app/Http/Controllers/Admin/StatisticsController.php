@@ -103,7 +103,9 @@ class StatisticsController extends Controller
             $assignmentsByTeacher = $assignments->groupBy('teacher_id');
             foreach ($assignmentsByTeacher as $teacherId => $teacherAssignments) {
                 $teacher = $teacherAssignments->first()->teacher;
-                if (!$teacher) continue;
+                if (!$teacher) {
+                    continue;
+                }
 
                 $total_hours = 0;
                 $total_classes = $teacherAssignments->count();
@@ -250,7 +252,7 @@ class StatisticsController extends Controller
             }
         }
         $isAllTerms = ($selectedTerm === null);
-        
+
         $facultyChartData = ['labels' => [], 'data' => []];
         $creditsChartData = ['labels' => [], 'data' => []];
         $courseTermStats = [];
@@ -305,10 +307,12 @@ class StatisticsController extends Controller
             $classesByCourse = $classesInTerm->groupBy('course_id');
             foreach ($classesByCourse as $courseId => $classes) {
                 $course = $classes->first()->course;
-                if (!$course) continue; // Bỏ qua nếu không tìm thấy thông tin học phần
+                if (!$course) {
+                    continue; // Bỏ qua nếu không tìm thấy thông tin học phần
+                }
 
                 $totalStudents = $classes->sum('number_of_students');
-                
+
                 $courseTermStats[] = [
                     'course_name' => $course->name,
                     'course_code' => $course->course_code,
@@ -318,10 +322,10 @@ class StatisticsController extends Controller
                 ];
             }
         }
-        
+
         // Sắp xếp học phần theo tổng sinh viên đăng ký giảm dần
         $courseTermStats = collect($courseTermStats)->sortByDesc('total_students')->values();
-        
+
         // Dữ liệu cho biểu đồ top học phần
         $topCoursesByEnrollment = $courseTermStats->take(15);
         $enrollmentChartData = [
@@ -422,7 +426,7 @@ class StatisticsController extends Controller
             $details = $termAssignments->map(function ($assignment) use ($payrollParameters, $allClassSizeCoefficients, $selectedTeacher, &$termTotal) {
                 $course = $assignment->courseClass->course;
                 $courseClass = $assignment->courseClass;
-                
+
                 // Truy cập term thông qua courseClass
                 $termStartDate = $assignment->courseClass->term->start_date;
 
@@ -581,7 +585,7 @@ class StatisticsController extends Controller
                     $query->whereHas('payrolls.term', function ($subQuery) use ($selectedYear) {
                         $subQuery->whereYear('start_date', $selectedYear);
                     });
-                }])
+            }])
                 ->with(['teachers.payrolls' => function ($query) use ($selectedYear) {
                     $query->whereHas('term', function ($subQuery) use ($selectedYear) {
                         $subQuery->whereYear('start_date', $selectedYear);
@@ -592,7 +596,7 @@ class StatisticsController extends Controller
                     $faculty->total_salary = $faculty->teachers->reduce(function ($carry, $teacher) {
                         return $carry + $teacher->payrolls->sum('total_amount');
                     }, 0);
-                    $faculty->average_salary = $faculty->teachers_count > 0 ? 
+                    $faculty->average_salary = $faculty->teachers_count > 0 ?
                         $faculty->total_salary / $faculty->teachers_count : 0;
                     return $faculty;
                 })
@@ -614,12 +618,12 @@ class StatisticsController extends Controller
         }
 
         return view('admin.reports.faculty_salary', compact(
-            'years', 
-            'selectedYear', 
-            'reportData', 
+            'years',
+            'selectedYear',
+            'reportData',
             'totalSalary',
             'averageSalary',
-            'chartLabels', 
+            'chartLabels',
             'chartData',
             'top5Labels',
             'top5Data'

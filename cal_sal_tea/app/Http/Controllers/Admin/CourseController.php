@@ -16,11 +16,11 @@ class CourseController extends Controller
     public function index(Request $request)
     {
         $query = Course::with(['faculty', 'courseClasses.term']);
-        
+
         // Tìm kiếm
         if ($request->has('search') && $request->search !== '') {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('course_code', 'like', "%{$search}%");
             });
@@ -28,14 +28,14 @@ class CourseController extends Controller
 
         // Lọc theo kỳ học
         if ($request->has('term_id') && $request->term_id !== '' && $request->term_id !== null) {
-            $query->whereHas('courseClasses', function($q) use ($request) {
+            $query->whereHas('courseClasses', function ($q) use ($request) {
                 $q->where('term_id', $request->term_id);
             });
         }
-        
+
         $courses = $query->paginate(10)->withQueryString();
         $terms = Term::orderBy('academic_year', 'desc')->orderBy('name')->get();
-        
+
         return view('admin.courses.index', compact('courses', 'terms'));
     }
 

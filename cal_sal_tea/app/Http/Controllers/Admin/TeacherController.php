@@ -19,7 +19,7 @@ class TeacherController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
                   ->orWhere('teacher_code', 'like', "%{$search}%");
             });

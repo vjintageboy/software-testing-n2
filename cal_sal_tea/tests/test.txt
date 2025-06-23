@@ -1,2 +1,5 @@
 ./vendor/laravel/dusk/bin/chromedriver --port=9515
 php artisan dusk
+php artisan test tests/Feature/FacultyControllerTest.php
+php artisan serve --host=abc.fake --port=8000
+vendor/bin/phpstan analyse --memory-limit=512M

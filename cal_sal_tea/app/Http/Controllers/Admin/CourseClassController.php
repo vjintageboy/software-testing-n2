@@ -9,7 +9,9 @@ use App\Models\Term;
 use Illuminate\Http\Request;
 use App\Models\ClassSizeCoefficient;
 use App\Models\Teacher; // <-- Thêm model Teacher
-use App\Models\Assignment; // <-- Thêm model Assignment
+use App\Models\Assignment;
+
+// <-- Thêm model Assignment
 
 
 class CourseClassController extends Controller
@@ -181,7 +183,7 @@ class CourseClassController extends Controller
         ]);
 
         $selectedClasses = CourseClass::whereIn('id', $request->selected_classes);
-        
+
         // Check if any of the selected classes have assignments
         $classesWithAssignments = $selectedClasses->whereHas('assignments')->count();
         if ($classesWithAssignments > 0) {

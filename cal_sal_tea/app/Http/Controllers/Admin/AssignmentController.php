@@ -142,7 +142,7 @@ class AssignmentController extends Controller
             'teacher_id' => $request->teacher_id,
             'notes' => $request->notes, // Thêm notes vào mảng cập nhật
         ]);
-        
+
         // Sửa lại để bỏ tiền tố 'admin.'
         return redirect()->route('assignments.index')->with('success', 'Cập nhật phân công thành công.');
     }

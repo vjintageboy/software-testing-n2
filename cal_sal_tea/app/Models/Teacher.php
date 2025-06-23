@@ -40,7 +40,7 @@ class Teacher extends Model
     {
         return $this->belongsTo(Degree::class);
     }
-    
+
     /**
      * Get the assignments for the teacher.
      */

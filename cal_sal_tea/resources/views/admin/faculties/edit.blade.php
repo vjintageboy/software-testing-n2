@@ -56,7 +56,7 @@
                             @enderror
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Cập nhật</button>
+                        <button type="submit" class="btn btn-primary" dusk="submit-update-faculty">Cập nhật</button>
                         <a href="{{ route('faculties.index') }}" class="btn btn-secondary">Hủy</a>
                     </form>
 

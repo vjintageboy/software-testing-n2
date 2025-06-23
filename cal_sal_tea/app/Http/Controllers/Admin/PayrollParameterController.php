@@ -14,12 +14,12 @@ class PayrollParameterController extends Controller
      */
     // app/Http/Controllers/Admin/PayrollParameterController.php
 
-public function index()
-{
-    // Đã sửa: Sắp xếp theo cột mới 'valid_from'
-    $parameters = PayrollParameter::orderBy('valid_from', 'desc')->paginate(10);
-    return view('admin.payroll_parameters.index', compact('parameters'));
-}
+    public function index()
+    {
+        // Đã sửa: Sắp xếp theo cột mới 'valid_from'
+        $parameters = PayrollParameter::orderBy('valid_from', 'desc')->paginate(10);
+        return view('admin.payroll_parameters.index', compact('parameters'));
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -120,7 +120,7 @@ public function index()
         if ($previousParam) {
             // Chuyển đổi ngày của đơn giá trước đó thành Carbon
             $previousValidTo = Carbon::parse($previousParam->valid_to);
-            
+
             // Kiểm tra xem có khoảng trống giữa đơn giá cũ và đơn giá đang sửa không
             if ($validFrom->diffInDays($previousValidTo) > 1) {
                 return back()->withErrors([
@@ -138,7 +138,7 @@ public function index()
         if ($nextParam) {
             // Chuyển đổi ngày của đơn giá tiếp theo thành Carbon
             $nextValidFrom = Carbon::parse($nextParam->valid_from);
-            
+
             // Nếu đơn giá đang sửa có ngày hết hiệu lực
             if ($validTo) {
                 // Kiểm tra xem có khoảng trống giữa đơn giá đang sửa và đơn giá tiếp theo không
